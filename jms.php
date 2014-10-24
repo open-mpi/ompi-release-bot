@@ -54,8 +54,12 @@ function find_label($org, $repo, $issue_num, $body)
     preg_match_all("/label:(\S+)/m", $body, $matches);
     if (is_array($matches[1])) {
         foreach ($matches[1] as $label) {
-            # JMS Error if the label does not exist
-            set_issue_label($org, $repo, $issue_num, $label);
+            if (!label_exists($org, $repo, $label)) {
+                add_comment($org, $repo, $issue_num,
+                            "OMPIBot error: Label $label does not exist");
+            } else {
+                set_issue_label($org, $repo, $issue_num, $label);
+            }
         }
     }
 }
