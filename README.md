@@ -1,9 +1,9 @@
 Simple bot for setting various attributes on the
-(ompi-release)[https://github.com/open-mpi/ompi-release] Github repo.
+[ompi-release](https://github.com/open-mpi/ompi-release) Github repo.
 This bot is necessary because, by long-standing tradition/convention,
 the bulk of the Open MPI developer community does not have write
 access to the release branches (i.e., the
-(ompi-release)[https://github.com/open-mpi/ompi-release] repo).
+[ompi-release](https://github.com/open-mpi/ompi-release) repo).
 
 In Github terms, this means that all the OMPI Github devs only have
 "read only" access to this repo.  As such, they can file pull
