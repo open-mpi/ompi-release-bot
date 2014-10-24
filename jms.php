@@ -51,15 +51,16 @@ function jms_process($org, $repo, $issue_num, $body)
 #
 function find_label($org, $repo, $issue_num, $body)
 {
-    preg_match_all("/label:(\S+)/m", $body, $matches);
-    if (is_array($matches[1])) {
-        foreach ($matches[1] as $label) {
-            if (!label_exists($org, $repo, $label)) {
-                add_comment($org, $repo, $issue_num,
-                            "OMPIBot error: Label $label does not exist");
-            } else {
-                set_issue_label($org, $repo, $issue_num, $label);
-            }
+    if (0 == preg_match_all("/label:(\S+)/m", $body, $matches)) {
+        return;
+    }
+
+    foreach ($matches[1] as $label) {
+        if (!label_exists($org, $repo, $label)) {
+            add_comment($org, $repo, $issue_num,
+                        "OMPIBot error: Label $label does not exist");
+        } else {
+            set_issue_label($org, $repo, $issue_num, $label);
         }
     }
 }
@@ -69,20 +70,21 @@ function find_label($org, $repo, $issue_num, $body)
 #
 function find_nolabel($org, $repo, $issue_num, $body)
 {
-    preg_match_all("/nolabel:(\S+)/m", $body, $matches);
-    if (is_array($matches[1])) {
-        foreach ($matches[1] as $label) {
-            # JMS Error if the label is not already set on this issue,
-            # or does not exist
-            if (!label_set_on_issue($org, $repo, $issue_num, $label)) {
-                add_comment($org, $repo, $issue_num,
-                            "OMPIBot error: Label $label is not set on issue $issue_num");
-            } else if (!label_exists($org, $repo, $label)) {
-                add_comment($org, $repo, $issue_num,
-                            "OMPIBot error: Label $label does not exist");
-            } else {
-                remove_issue_label($org, $repo, $issue_num, $label);
-            }
+    if (0 == preg_match_all("/nolabel:(\S+)/m", $body, $matches)) {
+        return;
+    }
+
+    foreach ($matches[1] as $label) {
+        # JMS Error if the label is not already set on this issue,
+        # or does not exist
+        if (!label_set_on_issue($org, $repo, $issue_num, $label)) {
+            add_comment($org, $repo, $issue_num,
+                        "OMPIBot error: Label $label is not set on issue $issue_num");
+        } else if (!label_exists($org, $repo, $label)) {
+            add_comment($org, $repo, $issue_num,
+                        "OMPIBot error: Label $label does not exist");
+        } else {
+            remove_issue_label($org, $repo, $issue_num, $label);
         }
     }
 }
@@ -92,24 +94,25 @@ function find_nolabel($org, $repo, $issue_num, $body)
 #
 function find_milestone($org, $repo, $issue_num, $body)
 {
-    preg_match_all("/milestone:(\S+)/m", $body, $matches);
-    if (is_array($matches[1])) {
-        if (count($matches[1]) == 1) {
-            $milestone = $matches[1][0];
+    if (0 == preg_match_all("/milestone:(\S+)/m", $body, $matches)) {
+        return;
+    }
 
-            # JMS Error if the milestone does not exist
-            if (!milestone_exists($org, $repo, $milestone)) {
-                add_comment($org, $repo, $issue_num,
-                            "OMPIBot error: Milestone $milestone does not exist");
-            } else {
-                # JMS It's ok to override a milestone that was already
-                # set
-                set_issue_milestone($org, $repo, $issue_num, $milestone);
-            }
-        } else if (count($matches[1]) > 1) {
+    if (count($matches[1]) == 1) {
+        $milestone = $matches[1][0];
+
+        # JMS Error if the milestone does not exist
+        if (!milestone_exists($org, $repo, $milestone)) {
             add_comment($org, $repo, $issue_num,
-                        "OMPIBot error: Cannot set more than one milestone on an issue");
+                        "OMPIBot error: Milestone $milestone does not exist");
+        } else {
+            # JMS It's ok to override a milestone that was already
+            # set
+            set_issue_milestone($org, $repo, $issue_num, $milestone);
         }
+    } else if (count($matches[1]) > 1) {
+        add_comment($org, $repo, $issue_num,
+                    "OMPIBot error: Cannot set more than one milestone on an issue");
     }
 }
 
@@ -118,23 +121,23 @@ function find_milestone($org, $repo, $issue_num, $body)
 #
 function find_nomilestone($org, $repo, $issue_num, $body)
 {
-    preg_match_all("/nomilestone:(\S+)/m", $body, $matches);
-    if (is_array($matches[1])) {
-        if (count($matches[1]) == 1) {
-            $milestone = $matches[1][0];
+    if (0 == preg_match_all("/nomilestone:(\S+)/m", $body, $matches)) {
+        return;
+    }
 
-             # JMS Error if the milestone is not already set on the
-             # issue
-            if (current_milestone($org, $repo, $issue_num) <> $milestone) {
-                add_comment($org, $repo, $issue_num,
-                            "OMPIBot error: Milestone $milestone is not set on issue $issue_num");
-            } else {
-                remove_issue_milestone($org, $repo, $issue_num, $milestone);
-            }
-        } else if (count($matches[1]) > 1) {
+    if (count($matches[1]) == 1) {
+        $milestone = $matches[1][0];
+
+        # JMS Error if the milestone is not already set on the issue
+        if (current_milestone($org, $repo, $issue_num) <> $milestone) {
             add_comment($org, $repo, $issue_num,
-                        "OMPIBot error: Cannot remove more than one milestone from an issue");
+                        "OMPIBot error: Milestone $milestone is not set on issue $issue_num");
+        } else {
+            remove_issue_milestone($org, $repo, $issue_num, $milestone);
         }
+    } else if (count($matches[1]) > 1) {
+        add_comment($org, $repo, $issue_num,
+                    "OMPIBot error: Cannot remove more than one milestone from an issue");
     }
 }
 
@@ -143,24 +146,25 @@ function find_nomilestone($org, $repo, $issue_num, $body)
 #
 function find_assign($org, $repo, $issue_num, $body)
 {
-    preg_match_all("/assign:(\S+)/m", $body, $matches);
-    if (is_array($matches[1])) {
-        if (count($matches[1]) == 1) {
-            $user = $matches[1][0];
+    if (0 == preg_match_all("/assign:(\S+)/m", $body, $matches)) {
+        return;
+    }
 
-            # JMS Error if the user does not exist or is not part of
-            # this organization
-            if (!valid_user($org, $repo, $user)) {
-                add_comment($org, $repo, $issue_num,
-                            "OMPIBot error: User $user is not valid for issue $issue_num");
-            } else {
-                # JMS It's ok to override a user that was already assigned
-                set_issue_assignee($org, $repo, $issue_num, $user);
-            }
-        } else if (count($matches[1]) > 1) {
+    if (count($matches[1]) == 1) {
+        $user = $matches[1][0];
+
+        # JMS Error if the user does not exist or is not part of
+        # this organization
+        if (!valid_user($org, $repo, $user)) {
             add_comment($org, $repo, $issue_num,
-                        "OMPIBot error: Cannot assign more than one user on an issue");
+                        "OMPIBot error: User $user is not valid for issue $issue_num");
+        } else {
+            # JMS It's ok to override a user that was already assigned
+            set_issue_assignee($org, $repo, $issue_num, $user);
         }
+    } else if (count($matches[1]) > 1) {
+        add_comment($org, $repo, $issue_num,
+                    "OMPIBot error: Cannot assign more than one user on an issue");
     }
 }
 
@@ -169,22 +173,23 @@ function find_assign($org, $repo, $issue_num, $body)
 #
 function find_noassign($org, $repo, $issue_num, $body)
 {
-    preg_match_all("/assign:(\S+)/m", $body, $matches);
-    if (is_array($matches[1])) {
-        if (count($matches[1]) == 1) {
-            $assign = $matches[1][0];
+    if (0 == preg_match_all("/assign:(\S+)/m", $body, $matches)) {
+        return;
+    }
 
-             # JMS Error if the user is not already set on the issue
-            if (current_assign($org, $repo, $issue_num) <> $user) {
-                add_comment($org, $repo, $issue_num,
-                            "OMPIBot error: User $user is not assigned to issue $issue_num");
-            } else {
-                remove_issue_assignee($org, $repo, $issue_num, $user);
-            }
-        } else if (count($matches[1]) > 1) {
+    if (count($matches[1]) == 1) {
+        $assign = $matches[1][0];
+
+        # JMS Error if the user is not already set on the issue
+        if (current_assign($org, $repo, $issue_num) <> $user) {
             add_comment($org, $repo, $issue_num,
-                        "OMPIBot error: Cannot remove more than one user from an issue");
+                        "OMPIBot error: User $user is not assigned to issue $issue_num");
+        } else {
+            remove_issue_assignee($org, $repo, $issue_num, $user);
         }
+    } else if (count($matches[1]) > 1) {
+        add_comment($org, $repo, $issue_num,
+                    "OMPIBot error: Cannot remove more than one user from an issue");
     }
 }
 
