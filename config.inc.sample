@@ -1,0 +1,11 @@
+<?php
+
+$org = "open-mpi";
+$user = "ggouaillardet";
+$repo = "sandbox";
+$token = "";
+$secret = "";
+
+// $proxy = "protocol://proxy:port";
+
+?>
