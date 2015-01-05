@@ -1,5 +1,50 @@
 <?php
 
+class GitHubObject {
+    public $available_labels;
+    public $available_milestones;
+    public $body;
+    public $issue;
+    public $labels;
+    public $labelsChanged;
+    public $org;
+    public $payload;
+    public $proxy;
+    public $repo;
+    public $token;
+    public $user;
+    public $request;
+
+    public function init($org, $user, $repo, $token, $secret) {
+        $this->org = $org;
+        $this->user = $user;
+        $this->repo = $repo;
+        $this->token = $token;
+        $this->secret = $secret;
+        $this->request = Array();
+        print("org=$this->org\nuser=$this->user\nrepo=$this->repo\ntoken=$this->token\n");
+    }
+
+    public function set_proxy($proxy) {
+        $this->proxy = $proxy;
+    }
+
+    public function set_payload($payload) {
+        $this->payload = $payload;
+        $this->issue = $payload['issue']['number'];
+        $this->labels = Array();
+        foreach ($payload['issue']['labels'] as $label) {
+            print_debug("set_payload: " . $label['name'] . "\n");
+            $this->labels[count($this->labels)] = $label['name'];
+        }
+        $this->labelsChanged = false;
+    }
+
+    public function set_body_from($from) {
+        $this->body = $this->payload[$from]['body'];
+    }
+}
+
 function print_debug ($str) {
     print $str;
 }
@@ -14,19 +59,27 @@ function HandleHeaderLine( $curl, $header_line ) {
 }
 
 /* issue a github get request */
-function get_github($request) {
-    global $user, $repo, $token, $proxy, $httpCode, $etag;
+function get_github($gh, $request, &$httpCode) {
+    global $etag;
+    print("---\norg=$gh->org\nuser=$gh->user\nrepo=$gh->repo\ntoken=$gh->token\n");
     // create curl resource
     $ch = curl_init();
 
     // set url
-    curl_setopt($ch, CURLOPT_URL, "https://api.github.com/repos/".$user."/".$repo."/".$request);
+    print "https://api.github.com/repos/".$gh->user."/".$gh->repo."/".$request."\n";
+    print "Authorization: token ".$gh->token."\n";
+    if (isset($gh->proxy)) {
+        print "PROXY\n";
+    } else {
+        print "NO PROXY\n";
+    }
+    curl_setopt($ch, CURLOPT_URL, "https://api.github.com/repos/".$gh->user."/".$gh->repo."/".$request);
 
     // set proxy
-    if (isset($proxy)) curl_setopt($ch, CURLOPT_PROXY, $proxy);
+    if (isset($gh->proxy)) curl_setopt($ch, CURLOPT_PROXY, $gh->proxy);
 
     // set header
-    $headers = array('User-Agent: curl-php', 'Authorization: token '.$token);
+    $headers = array('User-Agent: curl-php', 'Authorization: token '.$gh->token);
     if (isset($etag)) {
         $headers[2] = 'If-None-Match: "' . $etag . '"';
     }
@@ -49,27 +102,27 @@ function get_github($request) {
     if ($httpCode != 200 && $httpCode != 304) {
         print "Could not get " . $request . " error " . $httpCode . "\n";
         exit(1);
+    } else {
+        print "httpCode = " . $httpCode . "\noutput = " . $output . "\n" ;
     }
 
     return json_decode($output, true);
-
 }
 
 /* issue a github patch request */
-function patch_github_issue($issue, $request) {
-    global $user, $repo, $token, $proxy, $httpCode, $etag;
-
+function patch_github_issue($gh) {
+    print("---\norg=$gh->org\nuser=$gh->user\nrepo=$gh->repo\ntoken=$gh->token\n");
     // create curl resource
     $ch = curl_init();
 
     // set url
-    curl_setopt($ch, CURLOPT_URL, "https://api.github.com/repos/" . $user . "/" . $repo . "/issues/" . $issue);
+    curl_setopt($ch, CURLOPT_URL, "https://api.github.com/repos/" . $gh->user . "/" . $gh->repo . "/issues/" . $gh->issue);
 
     // set proxy
-    if (isset($proxy)) curl_setopt($ch, CURLOPT_PROXY, $proxy);
+    if (isset($gh->proxy)) curl_setopt($ch, CURLOPT_PROXY, $gh->proxy);
 
     // set header
-    $headers = array('User-Agent: curl-php', 'Authorization: token 3c62c001458b3a86a7511f5e7912107e122b865d');
+    $headers = array('User-Agent: curl-php', 'Authorization: token '.$gh->token);
     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 
     // this is a PATCH request
@@ -77,7 +130,11 @@ function patch_github_issue($issue, $request) {
 
     // set request
     curl_setopt($ch, CURLOPT_POST, 1);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($request));
+    
+    if ($gh->labelsChanged) {
+        $gh->request['labels'] = $gh->labels;
+    }
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($gh->request));
 
     // return the transfer as string
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
@@ -88,25 +145,24 @@ function patch_github_issue($issue, $request) {
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
     print "PATCH request returned " . $httpCode . "\n";
-    print "PATCH request on issue " . $issue . " was :\n" . json_encode($request) ;
+    print "PATCH request on issue " . $issue . " was :\n" . json_encode($gh->request) ;
 
     // close curl resource
     curl_close($ch);
 }
 
-function is_organization_member($org, $reviewer) {
-    global $token, $proxy;
+function is_organization_member($gh, $reviewer) {
     // create curl resource
     $ch = curl_init();
 
     // set url
-    curl_setopt($ch, CURLOPT_URL, "https://api.github.com/orgs/".$org."/members/".$reviewer);
+    curl_setopt($ch, CURLOPT_URL, "https://api.github.com/orgs/".$gh->org."/members/".$reviewer);
 
     // set proxy
-    if (isset($proxy)) curl_setopt($ch, CURLOPT_PROXY, $proxy);
+    if (isset($proxy)) curl_setopt($ch, CURLOPT_PROXY, $gh->proxy);
 
     // set header
-    $headers = array('User-Agent: curl-php', 'Authorization: token '.$token);
+    $headers = array('User-Agent: curl-php', 'Authorization: token '.$gh->token);
     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 
     // return the transfer as string
@@ -127,38 +183,42 @@ function is_organization_member($org, $reviewer) {
     }
 }
 
-/* return an array of labels */
-function get_labels () {
-    global $httpCode;
-    if (file_exists("labels.json")) {
-        $fd = fopen("labels.json", "r");
-        $labels = json_decode(fread($fd, filesize("labels.json")), true);
-        $etag = $labels['ETag'];
-        fclose($fd);
-    } else {
-        $labels = Array();
-    }
-
-    $reply = get_github("labels");
-
-    if ($httpCode == 200) {
-        $labels['ETag'] = $etag;
-        for($i=0; $i < count($reply); $i++) {
-            $labels[$reply[$i]['name']] = 'L';
+/* return true if the given label exists */
+function label_exists ($gh, $label) {
+    global $etag;
+    if (!isset($gh->available_labels)) {
+        if (file_exists("labels.json")) {
+            $fd = fopen("labels.json", "r");
+            $labels = json_decode(fread($fd, filesize("labels.json")), true);
+            $etag = $labels['ETag'];
+            fclose($fd);
+        } else {
+            $labels = Array();
+            unset($GLOBALS['etag']);
         }
-        $fd = fopen("labels.json", "w") or die ("could not open labels.json\n");
-        $output = json_encode($labels);
-        fwrite($fd, $output, strlen($output));
-        fclose($fd);
+
+        $reply = get_github($gh, "labels", $httpCode);
+
+        if ($httpCode == 200) {
+            $labels['ETag'] = $etag;
+            for($i=0; $i < count($reply); $i++) {
+                $labels[$reply[$i]['name']] = 'L';
+            }
+            $fd = fopen("labels.json", "w") or die ("could not open labels.json\n");
+            $output = json_encode($labels);
+            fwrite($fd, $output, strlen($output));
+            fclose($fd);
+        }
+        unset($labels['ETag']);
+        $gh->available_labels = $labels;
     }
 
-    unset($labels['ETag']);
-    return $labels;
+    return isset($gh->available_labels[$label]);
 }
 
-/* return an array of milestones */
-function get_milestones () {
-    global $httpCode;
+/* return true if the given milestone exists */
+function milestone_exists($gh, $milestone) {
+    global $etag;
     if (file_exists("milestones.json")) {
         $fd = fopen("milestones.json", "r");
         $milestones= json_decode(fread($fd, filesize("milestones.json")), true);
@@ -166,11 +226,12 @@ function get_milestones () {
         fclose($fd);
     } else {
         $milestones = Array();
+        unset($GLOBALS['etag']);
     }
 
-    $reply = get_github("milestones");
+    $reply = get_github($gh, "milestones", $httpCode);
 
-
+    print_debug("milestone_exists: " . $httpCode . "\n");
     if ($httpCode == 200) {
         $milestones['ETag'] = $etag;
         for($i=0; $i < count($reply); $i++) {
@@ -178,198 +239,259 @@ function get_milestones () {
         }
         $fd = fopen("milestones.json", "w") or die ("could not open milestones.json\n");
         $output = json_encode($milestones);
+        print_debug("writing XXX" . $output . "XXX\n");
         fwrite($fd, $output, strlen($output));
         fclose($fd);
     }
-
     unset($milestones['ETag']);
-    return $milestones;
+    $gh->available_milestones = $milestones;
+
+    return isset($gh->available_milestones[$milestone]);
 }
 
-function nomilestone ($payload, &$request) {
-    if (isset($payload['issue']['milestone'])) {
-        print_debug("unsetting milestone " . $payload['issue']['milestone']['title'] . "\n");
-        $request['milestone'] = null;
+function add_comment($gh, $comment) {
+    print_debug($comment."\n");
+}
+
+function label_set_on_issue($gh, $label) {
+    $found = false;
+    foreach ($gh->labels as $idx => $name) {
+        if (strcmp($name, $label) == 0) {
+            $found = true;
+        }
+    }
+    return $found;
+}
+
+function set_issue_label($gh, $label) {
+    $found = false;
+    foreach ($gh->labels as $idx => $name) {
+        if (strcmp($name, $label) == 0) {
+            print_debug("set_issue_label " . $idx . " => " . $name . "\n");
+            $found = true;
+        }
+    }
+    if (!$found) {
+        print "set_issue_label: NOT found ".$label."\n";
+        $gh->labels[count($gh->labels)] = $label;
+        $gh->labelsChanged = true;
     } else {
-        print_debug("already no milestone\n");
+        print "set_issue_label: FOUND ".$label."\n";
     }
 }
 
-function setlabels(&$labels, $payload) {
-    if (!isset($labels)) {
-        $labels = Array();
-        foreach ($payload['issue']['labels'] as $label) {
-            $labels[count($labels)] = $label['name'];
+function remove_issue_label($gh, $label) {
+    foreach ($gh->labels as $idx => $name) {
+        if (strcmp($name, $label) == 0) {
+            unset($gh->labels[$idx]);
+            $gh->labelsChanged = true;
         }
     }
 }
 
-function nolabel(&$labels, &$labelschanged, $payload, $tag) {
-    setlabels($labels, $payload);
-    $notfound = true;
-    foreach ($labels as $idx => $label) {
-        if (strcmp($label, $tag) == 0) {
-            $notfound = false;
-            unset($labels[$idx]);
-            $labelschanged = true;
-        }
-    }
-    if ($notfound) print_debug("no such label/milestone to remove : " . $tag . "\n");
+function milestone_set_on_issue($gh) {
+    return isset($gh->payload['issue']['milestone']);
 }
 
-function process_issue ($payload, $body) {
-    global $user, $org, $repo;
+function set_issue_milestone($gh, $milestone) {
+    $gh->request['milestone'] = $gh->available_milestones[$milestone];
+}
 
-    /* is this my repository ? */
-    if (strcmp($payload['repository']['full_name'],
-               $user . "/" . $repo) != 0) {
-        print_debug ("Not my repository : " . $user . "/" . $repo . "\n");
+function remove_issue_milestone($gh) {
+    $gh->request['milestone'] = null;
+}
+
+function issue_assigned($gh) {
+    return isset($gh->payload['issue']['assignee']);
+}
+
+function set_issue_assignee($gh, $user) {
+    $gh->request['assignee'] = $user;
+}
+
+function remove_issue_assignee($gh) {
+    $gh->request['assignee'] = null;
+}
+
+#
+# Search for label:<name>
+#
+function find_label($gh)
+{
+    if (0 == preg_match_all("/label:(\S+)/m", $gh->body, $matches)) {
         return;
     }
 
-    $tags = Array();
-    $request = Array();
-    $sep = " \t";
-    $labelschanged = false;
-
-
-    $lines = explode ("\r\n", $body);
-    foreach ($lines as $line) {
-        unset($at);
-        unset($rev);
-        $tok = strtok($line, $sep);
-        while ($tok !== false) {
-            if ($tok[0] == '@') {
-                $at = substr($tok,1);
-            } else if ($tok[0] == '#') {
-                if (strcasecmp($tok, "#review") == 0 ||
-                    strcasecmp($tok, "#assign") == 0) {
-                    $rev = true;
-                } else if (strcasecmp($tok, "#noassign") == 0) {
-                    $rev = false;
-                } else if (strcasecmp($tok, "#nomilestone") == 0) {
-                    nomilestone($payload, $request);
-                } else if (strncasecmp($tok, "#no", 3) == 0) {
-                    $tag = substr($tok, 3);
-                    if (isset($payload['issue']['milestone']) &&
-                        strcmp($payload['issue']['milestone']['title'], $tag) == 0) {
-                        nomilestone($payload, $request);
-                    } else {
-                        nolabel($labels, $labelschanged, $payload, $tag);
-                    }
-                } else {
-                    $tag = substr($tok, 1);
-                    if (isset($tags[$tag])) {
-                        print_debug("duplicate label/milestone : " . $tag . "\n");
-                    } else if (isset($payload['issue']['milestone']) &&
-                        strcmp($payload['issue']['milestone']['title'], $tag) == 0) {
-                        print_debug("milestone " . $tag . " is already set\n");
-                    } else {
-                        $found = false;
-                        setlabels($labels, $payload);
-                        foreach ($labels as $label) {
-                            if (strcmp($label, $tag) == 0) {
-                                $found = true;
-                            }
-                        }
-                        if ($found) {
-                            print_debug("label " . $tag . " is already set\n");
-                        } else {
-                            $tags[$tag] = true;
-                        }
-                    }
-                }
-            }
-            if (isset($rev)) {
-                if ($rev) {
-                    if (isset($at)) {
-                        $review = true;
-                        $reviewer = $at;
-                    }
-                } else {
-                       $review = false;
-                }
-            }
-            $tok = strtok($sep);
-        }
-    }
-
-    if (isset($review)) {
-        if ($review) {
-            if (isset($payload['issue']['assignee'])) {
-                if (strcmp($payload['issue']['assignee']['login'], $reviewer) == 0) {
-                    print_debug("already assigned to " . $reviewer ."\n");
-                } else if (is_organization_member($org, $reviewer)) {
-                    $request['assignee'] = $reviewer;
-                    print_debug("assigning from " . $payload['issue']['assignee']['login'] . " to " . $reviewer . "\n");
-                } else {
-                    print_debug("cannot assign to " . $reviewer . " : not a member\n");
-                }
-            } else if (is_organization_member($org, $reviewer)) {
-                $request['assignee'] = $reviewer;
-                print_debug("assigning to " . $reviewer . "\n");
-            } else {
-                print_debug("cannot assign to " . $reviewer . " : not a member\n");
-            }
+    foreach ($matches[1] as $label) {
+        print "handling label ". $label ."\n";
+        if (label_set_on_issue($gh, $label)) {
+            add_comment($gh,
+                        "OMPIBot error: Label $label is already set on issue $gh->issue");
+        } else if (!label_exists($gh, $label)) {
+            add_comment($gh,
+                        "OMPIBot error: Label $label does not exist");
         } else {
-            if (isset($payload['issue']['assignee'])) {
-                print_debug("unassigning request\n");
-                $request['assignee'] = null;
-            } else {
-                print_debug("already no assignee\n");
-            }
+            set_issue_label($gh, $label);
         }
     }
+}
 
-    if ($labelschanged || !empty($tags)) {
-        if (isset($request['milestone'])) {
-            $lm = get_labels();
+#
+# Search for nolabel:<name
+#
+function find_nolabel($gh)
+{
+    if (0 == preg_match_all("/labelno:(\S+)/m", $gh->body, $matches)) {
+        return;
+    }
+
+    foreach ($matches[1] as $label) {
+        if (!label_set_on_issue($gh, $label)) {
+            add_comment($gh,
+                        "OMPIBot error: Label $label is not set on issue $gh->issue");
+        } else if (!label_exists($gh, $label)) {
+            add_comment($gh,
+                        "OMPIBot error: Label $label does not exist");
         } else {
-            $repolabels = get_labels();
-            $repomilestones = get_milestones();
-            $lm = array_merge ($repolabels, $repomilestones);
-        }
-        foreach ($tags as $tag => $dummy) {
-            if (isset($lm[$tag])) {
-                if ($lm[$tag] == 'L') {
-                    $labels[count($labels)] = $tag;
-                    $labelschanged = true;
-                } else {
-                    $milestone = $lm[$tag];
-                }
-            }
+            remove_issue_label($gh, $label);
         }
     }
+}
 
-    if (isset($milestone)) {
-        $request['milestone'] = $milestone;
+#
+# Search for milestone:<name>
+#
+function find_milestone($gh)
+{
+    if (0 == preg_match_all("/milestone:(\S+)/m", $gh->body, $matches)) {
+        return;
     }
 
-    if ($labelschanged) {
-        $request['labels'] = $labels;
+    if (count($matches[1]) == 1) {
+        $milestone = $matches[1][0];
+
+        # JMS Error if the milestone does not exist
+        if (!milestone_exists($gh, $milestone)) {
+            add_comment($gh,
+                        "OMPIBot error: Milestone $milestone does not exist");
+        } else {
+            # JMS It's ok to override a milestone that was already
+            # set
+            set_issue_milestone($gh, $milestone);
+        }
+    } else if (count($matches[1]) > 1) {
+        add_comment($gh,
+                    "OMPIBot error: Cannot set more than one milestone on an issue");
+    }
+}
+
+#
+# Search for nomilestone:<name>
+#
+function find_nomilestone($gh)
+{
+    if (0 == preg_match_all("/milestoneno:/m", $gh->body, $matches)) {
+        return;
     }
 
-    if (!empty($request)) {
-        $issue = $payload['issue']['number'];
-        patch_github_issue($issue, $request);
+    if (count($matches) == 1) {
+        # JMS Error if a milestone is not already set on the issue
+        if (!milestone_set_on_issue($gh)) {
+            add_comment($gh,
+                        "OMPIBot error: No milestone is set on issue $gh->issue");
+        } else {
+            remove_issue_milestone($gh);
+        }
+    } else {
+        add_comment($gh,
+                    "OMPIBot error: Cannot remove more than one milestone from an issue");
+    }
+}
+
+#
+# Search for assign:<name>
+#
+function find_assign($gh)
+{
+    if (0 == preg_match_all("/assign:(\S+)/m", $gh->body, $matches)) {
+        return;
+    }
+
+    if (count($matches[1]) == 1) {
+
+        $user = $matches[1][0];
+
+        # JMS Error if the user does not exist or is not part of
+        # this organization
+        if (!is_organization_member($gh, $user)) {
+            add_comment($gh,
+                        "OMPIBot error: User $user is not valid for issue $gh->issue");
+        } else {
+            # JMS It's ok to override a user that was already assigned
+            set_issue_assignee($gh, $user);
+        }
+    } else if (count($matches[1]) > 1) {
+        add_comment($gh,
+                    "OMPIBot error: Cannot assign more than one user on an issue");
+    }
+}
+
+#
+# Search for noassign:
+#
+function find_noassign($gh)
+{
+    if (0 == preg_match_all("/assignno:/m", $gh->body, $matches)) {
+        return;
+    }
+
+    if (count($matches) == 1) {
+        # JMS Error if the user is not already set on the issue
+        if (!issue_assigned($gh)) {
+            add_comment($gh,
+                        "OMPIBot error: No user is assigned to issue $gh->issue");
+        } else {
+            remove_issue_assignee($gh);
+        }
+    } else {
+        add_comment($gh,
+                    "OMPIBot error: Cannot remove more than one user from an issue");
+    }
+}
+
+function jms_process_issue($gh)
+{
+    print_debug("Checking body: ".$gh->body."\n\n");
+
+    find_label($gh);
+    find_nolabel($gh);
+    find_milestone($gh);
+    find_nomilestone($gh);
+    find_assign($gh);
+    find_noassign($gh);
+
+    if ($gh->labelsChanged || count($gh->request)>0) {
+        patch_github_issue($gh);
     } else {
         print "NO PATCH\n";
     }
 }
 
 /* a comment has been posted to an issue */
-function process_issue_comment($payload) {
-    if(strcmp($payload['action'], "created") == 0) {
-        process_issue($payload, $payload['comment']['body']);
+function process_issue_comment($gh) {
+    if(strcmp($gh->payload['action'], "created") == 0) {
+        $gh->set_body_from('comment');
+        jms_process_issue($gh);
     } else {
         print_debug("nothing to do for action " . $payload['action']);
     }
 }
 
 /* an issue has been created */
-function process_issues($payload) {
-    if(strcmp($payload['action'], "created") == 0) {
-        process_issue($payload, $payload['issue']['body']);
+function process_issues($gh) {
+    if(strcmp($gh->payload['action'], "created") == 0) {
+        $gh->set_body_from('issue');
+        jms_process($gh);
     } else {
         print_debug("nothing to do for action " . $payload['action']);
     }
@@ -409,6 +531,13 @@ if (!function_exists($fn)) {
    return;
 }
 
-$fn($payload);
+$gh = new GitHubObject;
+$gh->init($org, $user, $repo, $token, $secret);
+if (isset($proxy)) {
+    $gh->set_proxy($proxy);
+}
+$gh->set_payload($payload);
+
+$fn($gh);
 
 ?>
