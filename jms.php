@@ -43,7 +43,7 @@ function jms_process($org, $repo, $issue_num, $body)
     find_assign($org, $repo, $issue_num, $body);
     find_noassign($org, $repo, $issue_num, $body);
 
-    handle_all_actions().
+    handle_all_actions();
 }
 
 #
