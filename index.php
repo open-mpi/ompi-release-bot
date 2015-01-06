@@ -318,7 +318,7 @@ function remove_issue_assignee($gh) {
 #
 function find_label($gh)
 {
-    if (0 == preg_match_all("/label:(\S+)/m", $gh->body, $matches)) {
+    if (0 == preg_match_all("/\blabel:(\S+)\b/m", $gh->body, $matches)) {
         return;
     }
 
@@ -341,7 +341,7 @@ function find_label($gh)
 #
 function find_nolabel($gh)
 {
-    if (0 == preg_match_all("/labelno:(\S+)/m", $gh->body, $matches)) {
+    if (0 == preg_match_all("/\blabelno:(\S+)\b/m", $gh->body, $matches)) {
         return;
     }
 
@@ -363,7 +363,7 @@ function find_nolabel($gh)
 #
 function find_milestone($gh)
 {
-    if (0 == preg_match_all("/milestone:(\S+)/m", $gh->body, $matches)) {
+    if (0 == preg_match_all("/\bmilestone:(\S+)\b/m", $gh->body, $matches)) {
         return;
     }
 
@@ -386,11 +386,11 @@ function find_milestone($gh)
 }
 
 #
-# Search for nomilestone:<name>
+# Search for nomilestone:
 #
 function find_nomilestone($gh)
 {
-    if (0 == preg_match_all("/milestoneno:/m", $gh->body, $matches)) {
+    if (0 == preg_match_all("/\bnomilestone:\b/m", $gh->body, $matches)) {
         return;
     }
 
@@ -413,13 +413,17 @@ function find_nomilestone($gh)
 #
 function find_assign($gh)
 {
-    if (0 == preg_match_all("/assign:(\S+)/m", $gh->body, $matches)) {
+    if (0 == preg_match_all("/\bassign:(\S+)\b/m", $gh->body, $matches)) {
         return;
     }
 
     if (count($matches[1]) == 1) {
 
         $user = $matches[1][0];
+        # If the username begins with @, strip it off (for convenience).
+        if (preg_match("/^\@/", $user)) {
+            $user = substr($user, 1);
+        }
 
         # JMS Error if the user does not exist or is not part of
         # this organization
@@ -437,11 +441,11 @@ function find_assign($gh)
 }
 
 #
-# Search for noassign:
+# Search for unassign:
 #
 function find_noassign($gh)
 {
-    if (0 == preg_match_all("/assignno:/m", $gh->body, $matches)) {
+    if (0 == preg_match_all("/\bunassign:\b/m", $gh->body, $matches)) {
         return;
     }
 
