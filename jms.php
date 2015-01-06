@@ -32,6 +32,26 @@ then exit(0)".
 
 */
 
+// Dummy functions
+function label_exists($label) { return 1; }
+function set_issue_label($org, $repo, $issue_num, $label) { }
+function label_set_on_issue($org, $repo, $issue_num, $label) { return 1; }
+function add_comment($org, $repo, $issue_num, $comment) { print ("*** COMMENT: $comment\n"); }
+function remove_issue_label($org, $repo, $issue_num, $label) { }
+
+function valid_user($org, $repo, $user) { return 1; }
+function set_issue_assignee($org, $repo, $issue_num, $user) { }
+function remove_issue_assignee($org, $repo, $issue_num, $user) { }
+function current_assign($org, $repo, $issue_num) { return ""; }
+
+function milestone_exists($org, $repo, $milestone) { return 1; }
+function set_issue_milestone($org, $repo, $issue_num, $milestone) { }
+function current_milestone($org, $repo, $issue_num) { return ""; }
+function remove_issue_milestone($org, $repo, $issue_num, $milestone) { }
+
+function handle_all_actions() { }
+
+
 function jms_process($org, $repo, $issue_num, $body)
 {
     print "Checking body: $body\n\n";
@@ -41,7 +61,7 @@ function jms_process($org, $repo, $issue_num, $body)
     find_milestone($org, $repo, $issue_num, $body);
     find_nomilestone($org, $repo, $issue_num, $body);
     find_assign($org, $repo, $issue_num, $body);
-    find_noassign($org, $repo, $issue_num, $body);
+    find_unassign($org, $repo, $issue_num, $body);
 
     handle_all_actions();
 }
@@ -51,11 +71,12 @@ function jms_process($org, $repo, $issue_num, $body)
 #
 function find_label($org, $repo, $issue_num, $body)
 {
-    if (0 == preg_match_all("/label:(\S+)/m", $body, $matches)) {
+    if (0 == preg_match_all("/\blabel:(\S+)\b/m", $body, $matches)) {
         return;
     }
 
     foreach ($matches[1] as $label) {
+        print ("*** Handling label: $label<--\n");
         if (!label_exists($org, $repo, $label)) {
             add_comment($org, $repo, $issue_num,
                         "OMPIBot error: Label $label does not exist");
@@ -70,11 +91,12 @@ function find_label($org, $repo, $issue_num, $body)
 #
 function find_nolabel($org, $repo, $issue_num, $body)
 {
-    if (0 == preg_match_all("/nolabel:(\S+)/m", $body, $matches)) {
+    if (0 == preg_match_all("/\bnolabel:(\S+)\b/m", $body, $matches)) {
         return;
     }
 
     foreach ($matches[1] as $label) {
+        print ("*** Handling nolabel: $label<--\n");
         # JMS Error if the label is not already set on this issue,
         # or does not exist
         if (!label_set_on_issue($org, $repo, $issue_num, $label)) {
@@ -94,12 +116,13 @@ function find_nolabel($org, $repo, $issue_num, $body)
 #
 function find_milestone($org, $repo, $issue_num, $body)
 {
-    if (0 == preg_match_all("/milestone:(\S+)/m", $body, $matches)) {
+    if (0 == preg_match_all("/\bmilestone:(\S+)\b/m", $body, $matches)) {
         return;
     }
 
     if (count($matches[1]) == 1) {
         $milestone = $matches[1][0];
+        print("*** Milestone: $milestone<--\n");
 
         # JMS Error if the milestone does not exist
         if (!milestone_exists($org, $repo, $milestone)) {
@@ -121,12 +144,13 @@ function find_milestone($org, $repo, $issue_num, $body)
 #
 function find_nomilestone($org, $repo, $issue_num, $body)
 {
-    if (0 == preg_match_all("/nomilestone:(\S+)/m", $body, $matches)) {
+    if (0 == preg_match_all("/\bnomilestone:(\S+)\b/m", $body, $matches)) {
         return;
     }
 
     if (count($matches[1]) == 1) {
         $milestone = $matches[1][0];
+        print("*** Nomilestone: $milestone<--\n");
 
         # JMS Error if the milestone is not already set on the issue
         if (current_milestone($org, $repo, $issue_num) <> $milestone) {
@@ -146,12 +170,18 @@ function find_nomilestone($org, $repo, $issue_num, $body)
 #
 function find_assign($org, $repo, $issue_num, $body)
 {
-    if (0 == preg_match_all("/assign:(\S+)/m", $body, $matches)) {
+    if (0 == preg_match_all("/\bassign:(\S+)\n/m", $body, $matches)) {
         return;
     }
 
     if (count($matches[1]) == 1) {
         $user = $matches[1][0];
+
+        # If the username begins with @, strip it off (for convenience).
+        if (preg_match("/^\@/", $user)) {
+            $user = substr($user, 1);
+        }
+        print("*** Assigning user: $user<--\n");
 
         # JMS Error if the user does not exist or is not part of
         # this organization
@@ -169,16 +199,22 @@ function find_assign($org, $repo, $issue_num, $body)
 }
 
 #
-# Search for noassign:<name>
+# Search for unassign:<name>
 #
-function find_noassign($org, $repo, $issue_num, $body)
+function find_unassign($org, $repo, $issue_num, $body)
 {
-    if (0 == preg_match_all("/assign:(\S+)/m", $body, $matches)) {
+    if (0 == preg_match_all("/\bunassign:(\S+)\b/m", $body, $matches)) {
         return;
     }
 
     if (count($matches[1]) == 1) {
-        $assign = $matches[1][0];
+        $user = $matches[1][0];
+
+        # If the username begins with @, strip it off (for convenience).
+        if (preg_match("/^\@/", $user)) {
+            $user = substr($user, 1);
+        }
+        print("*** Unassigning user: $user<--\n");
 
         # JMS Error if the user is not already set on the issue
         if (current_assign($org, $repo, $issue_num) <> $user) {
@@ -205,12 +241,15 @@ $body = "label:first
 
 label:foo
   label:bar  
+nolabel:this-is-nolabel
 
 This is another label:baz.  Hello!
 
-assign:jsquyres
-noassign:jsquyres
-noassign:bogus
+assign:@jsquyres
+unassign:@jsquyres
+
+milestone:foo  
+nomilestone:bar  
 
 label:last";
 jms_process("open-mpi", "ompi-release", "1", $body);
