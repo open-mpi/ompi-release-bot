@@ -4,6 +4,7 @@ class GitHubObject {
     public $available_labels;
     public $available_milestones;
     public $body;
+    public $comment;
     public $issue;
     public $labels;
     public $labelsChanged;
@@ -21,6 +22,7 @@ class GitHubObject {
         $this->repo = $repo;
         $this->token = $token;
         $this->secret = $secret;
+        $this->comment = "";
         $this->request = Array();
         print("org=$this->org\nuser=$this->user\nrepo=$this->repo\ntoken=$this->token\n");
     }
@@ -42,6 +44,91 @@ class GitHubObject {
 
     public function set_body_from($from) {
         $this->body = $this->payload[$from]['body'];
+    }
+
+    public function add_comment($comment) {
+        print_debug($comment."\n");
+        $this->comment = $this->comment . $comment . "\n" ;
+    }
+
+    /* issue a github comment */
+    public function comment_github_issue() {
+        print("---\norg=$this->org\nuser=$this->user\nrepo=$this->repo\ntoken=$this->token\n");
+        // create curl resource
+        $ch = curl_init();
+
+        // set url
+        curl_setopt($ch, CURLOPT_URL, "https://api.github.com/repos/" . $this->user . "/" . $this->repo . "/issues/" . $this->issue . "/comments");
+
+        // set proxy
+        if (isset($this->proxy)) curl_setopt($ch, CURLOPT_PROXY, $this->proxy);
+
+        // set header
+        $headers = array('User-Agent: curl-php', 'Authorization: token '.$this->token);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
+        // set request
+        curl_setopt($ch, CURLOPT_POST, 1);
+    
+        $comment = array();
+        $comment['body'] = $this->comment;
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($comment));
+
+        // return the transfer as string
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+
+        // $output contains the output string
+        $output = curl_exec($ch);
+
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+        print "POST comment returned " . $httpCode . "\n";
+        print "POST comment on issue " . $this->issue . " was :\n" . json_encode($comment) ;
+
+        // close curl resource
+        curl_close($ch);
+    }
+
+    /* issue a github patch request */
+    public function patch_github_issue() {
+        print("---\norg=$this->org\nuser=$this->user\nrepo=$this->repo\ntoken=$this->token\n");
+        // create curl resource
+        $ch = curl_init();
+
+        // set url
+        curl_setopt($ch, CURLOPT_URL, "https://api.github.com/repos/" . $this->user . "/" . $this->repo . "/issues/" . $this->issue);
+
+        // set proxy
+        if (isset($this->proxy)) curl_setopt($ch, CURLOPT_PROXY, $this->proxy);
+
+        // set header
+        $headers = array('User-Agent: curl-php', 'Authorization: token '.$this->token);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
+        // this is a PATCH request
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
+
+        // set request
+        curl_setopt($ch, CURLOPT_POST, 1);
+    
+        if ($this->labelsChanged) {
+            $this->request['labels'] = $this->labels;
+        }
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($this->request));
+
+        // return the transfer as string
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+
+        // $output contains the output string
+        $output = curl_exec($ch);
+
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+        print "PATCH request returned " . $httpCode . "\n";
+        print "PATCH request on issue " . $this->issue . " was :\n" . json_encode($this->request) ;
+
+        // close curl resource
+        curl_close($ch);
     }
 }
 
@@ -107,48 +194,6 @@ function get_github($gh, $request, &$httpCode) {
     }
 
     return json_decode($output, true);
-}
-
-/* issue a github patch request */
-function patch_github_issue($gh) {
-    print("---\norg=$gh->org\nuser=$gh->user\nrepo=$gh->repo\ntoken=$gh->token\n");
-    // create curl resource
-    $ch = curl_init();
-
-    // set url
-    curl_setopt($ch, CURLOPT_URL, "https://api.github.com/repos/" . $gh->user . "/" . $gh->repo . "/issues/" . $gh->issue);
-
-    // set proxy
-    if (isset($gh->proxy)) curl_setopt($ch, CURLOPT_PROXY, $gh->proxy);
-
-    // set header
-    $headers = array('User-Agent: curl-php', 'Authorization: token '.$gh->token);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-
-    // this is a PATCH request
-    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
-
-    // set request
-    curl_setopt($ch, CURLOPT_POST, 1);
-    
-    if ($gh->labelsChanged) {
-        $gh->request['labels'] = $gh->labels;
-    }
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($gh->request));
-
-    // return the transfer as string
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-
-    // $output contains the output string
-    $output = curl_exec($ch);
-
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
-    print "PATCH request returned " . $httpCode . "\n";
-    print "PATCH request on issue " . $issue . " was :\n" . json_encode($gh->request) ;
-
-    // close curl resource
-    curl_close($ch);
 }
 
 function is_organization_member($gh, $reviewer) {
@@ -249,10 +294,6 @@ function milestone_exists($gh, $milestone) {
     return isset($gh->available_milestones[$milestone]);
 }
 
-function add_comment($gh, $comment) {
-    print_debug($comment."\n");
-}
-
 function label_set_on_issue($gh, $label) {
     $found = false;
     foreach ($gh->labels as $idx => $name) {
@@ -325,11 +366,9 @@ function find_label($gh)
     foreach ($matches[1] as $label) {
         print "handling label ". $label ."\n";
         if (label_set_on_issue($gh, $label)) {
-            add_comment($gh,
-                        "OMPIBot error: Label $label is already set on issue $gh->issue");
+            $gh->add_comment("OMPIBot error: Label $label is already set on issue $gh->issue");
         } else if (!label_exists($gh, $label)) {
-            add_comment($gh,
-                        "OMPIBot error: Label $label does not exist");
+            $gh->add_comment("OMPIBot error: Label $label does not exist");
         } else {
             set_issue_label($gh, $label);
         }
@@ -347,11 +386,9 @@ function find_nolabel($gh)
 
     foreach ($matches[1] as $label) {
         if (!label_set_on_issue($gh, $label)) {
-            add_comment($gh,
-                        "OMPIBot error: Label $label is not set on issue $gh->issue");
+            $gh->add_comment("OMPIBot error: Label $label is not set on issue $gh->issue");
         } else if (!label_exists($gh, $label)) {
-            add_comment($gh,
-                        "OMPIBot error: Label $label does not exist");
+            $gh->add_comment("OMPIBot error: Label $label does not exist");
         } else {
             remove_issue_label($gh, $label);
         }
@@ -372,16 +409,14 @@ function find_milestone($gh)
 
         # JMS Error if the milestone does not exist
         if (!milestone_exists($gh, $milestone)) {
-            add_comment($gh,
-                        "OMPIBot error: Milestone $milestone does not exist");
+            $gh->add_comment("OMPIBot error: Milestone $milestone does not exist");
         } else {
             # JMS It's ok to override a milestone that was already
             # set
             set_issue_milestone($gh, $milestone);
         }
     } else if (count($matches[1]) > 1) {
-        add_comment($gh,
-                    "OMPIBot error: Cannot set more than one milestone on an issue");
+        $gh->add_comment("OMPIBot error: Cannot set more than one milestone on an issue");
     }
 }
 
@@ -397,14 +432,12 @@ function find_nomilestone($gh)
     if (count($matches) == 1) {
         # JMS Error if a milestone is not already set on the issue
         if (!milestone_set_on_issue($gh)) {
-            add_comment($gh,
-                        "OMPIBot error: No milestone is set on issue $gh->issue");
+            $gh->add_comment("OMPIBot error: No milestone is set on issue $gh->issue");
         } else {
             remove_issue_milestone($gh);
         }
     } else {
-        add_comment($gh,
-                    "OMPIBot error: Cannot remove more than one milestone from an issue");
+        $gh->add_comment("OMPIBot error: Cannot remove more than one milestone from an issue");
     }
 }
 
@@ -428,15 +461,13 @@ function find_assign($gh)
         # JMS Error if the user does not exist or is not part of
         # this organization
         if (!is_organization_member($gh, $user)) {
-            add_comment($gh,
-                        "OMPIBot error: User $user is not valid for issue $gh->issue");
+            $gh->add_comment("OMPIBot error: User $user is not valid for issue $gh->issue");
         } else {
             # JMS It's ok to override a user that was already assigned
             set_issue_assignee($gh, $user);
         }
     } else if (count($matches[1]) > 1) {
-        add_comment($gh,
-                    "OMPIBot error: Cannot assign more than one user on an issue");
+        $gh->add_comment("OMPIBot error: Cannot assign more than one user on an issue");
     }
 }
 
@@ -452,14 +483,12 @@ function find_noassign($gh)
     if (count($matches) == 1) {
         # JMS Error if the user is not already set on the issue
         if (!issue_assigned($gh)) {
-            add_comment($gh,
-                        "OMPIBot error: No user is assigned to issue $gh->issue");
+            $gh->add_comment("OMPIBot error: No user is assigned to issue $gh->issue");
         } else {
             remove_issue_assignee($gh);
         }
     } else {
-        add_comment($gh,
-                    "OMPIBot error: Cannot remove more than one user from an issue");
+        $gh->add_comment("OMPIBot error: Cannot remove more than one user from an issue");
     }
 }
 
@@ -475,9 +504,13 @@ function jms_process_issue($gh)
     find_noassign($gh);
 
     if ($gh->labelsChanged || count($gh->request)>0) {
-        patch_github_issue($gh);
+        $gh->patch_github_issue();
     } else {
         print "NO PATCH\n";
+    }
+
+    if (strlen($gh->comment) > 0) {
+        $gh->comment_github_issue();
     }
 }
 
@@ -495,7 +528,7 @@ function process_issue_comment($gh) {
 function process_issues($gh) {
     if(strcmp($gh->payload['action'], "created") == 0) {
         $gh->set_body_from('issue');
-        jms_process($gh);
+        jms_process_issue($gh);
     } else {
         print_debug("nothing to do for action " . $payload['action']);
     }
