@@ -492,7 +492,7 @@ function find_noassign($gh)
     }
 }
 
-function jms_process_issue($gh)
+function process_comment_body($gh)
 {
     print_debug("Checking body: ".$gh->body."\n\n");
 
@@ -518,7 +518,7 @@ function jms_process_issue($gh)
 function process_issue_comment($gh) {
     if(strcmp($gh->payload['action'], "created") == 0) {
         $gh->set_body_from('comment');
-        jms_process_issue($gh);
+        process_comment_body($gh);
     } else {
         print_debug("nothing to do for action " . $payload['action']);
     }
@@ -528,7 +528,7 @@ function process_issue_comment($gh) {
 function process_issues($gh) {
     if(strcmp($gh->payload['action'], "created") == 0) {
         $gh->set_body_from('issue');
-        jms_process_issue($gh);
+        process_comment_body($gh);
     } else {
         print_debug("nothing to do for action " . $payload['action']);
     }
