@@ -354,13 +354,13 @@ function remove_issue_assignee($gh) {
     $gh->request['assignee'] = null;
 }
 
-#
-# Search for label:<name>
-#
+/*
+ * Search for label:<name>
+ */
 function find_label($gh)
 {
-    # Hard-coded shortcut: ":+1:" is a shortcut for the "reviewed"/i
-    # label (if it exists).
+    /* Hard-coded shortcut: ":+1:" is a shortcut for the "reviewed"/i
+     * label (if it exists). */
     if (preg_match_all("/\b:\+1:\b/m", $gh->body, $matches) > 0 &&
         label_exists($gh, "reviewed")) {
         $gh->body .= "\nlabel:reviewed\n";
@@ -382,9 +382,9 @@ function find_label($gh)
     }
 }
 
-#
-# Search for nolabel:<name
-#
+/*
+ * Search for nolabel:<name
+ */
 function find_nolabel($gh)
 {
     if (0 == preg_match_all("/\blabelno:(\S+)\b/m", $gh->body, $matches)) {
@@ -402,9 +402,9 @@ function find_nolabel($gh)
     }
 }
 
-#
-# Search for milestone:<name>
-#
+/*
+ * Search for milestone:<name>
+ */
 function find_milestone($gh)
 {
     if (0 == preg_match_all("/\bmilestone:(\S+)\b/m", $gh->body, $matches)) {
@@ -414,12 +414,12 @@ function find_milestone($gh)
     if (count($matches[1]) == 1) {
         $milestone = $matches[1][0];
 
-        # JMS Error if the milestone does not exist
+        /* JMS Error if the milestone does not exist */
         if (!milestone_exists($gh, $milestone)) {
             $gh->add_comment("OMPIBot error: Milestone $milestone does not exist");
         } else {
-            # JMS It's ok to override a milestone that was already
-            # set
+            /* JMS It's ok to override a milestone that was already
+             * set */
             set_issue_milestone($gh, $milestone);
         }
     } else if (count($matches[1]) > 1) {
@@ -427,9 +427,9 @@ function find_milestone($gh)
     }
 }
 
-#
-# Search for nomilestone:
-#
+/*
+ * Search for nomilestone:
+ */
 function find_nomilestone($gh)
 {
     if (0 == preg_match_all("/\bnomilestone:\b/m", $gh->body, $matches)) {
@@ -437,7 +437,7 @@ function find_nomilestone($gh)
     }
 
     if (count($matches) == 1) {
-        # JMS Error if a milestone is not already set on the issue
+        /* JMS Error if a milestone is not already set on the issue */
         if (!milestone_set_on_issue($gh)) {
             $gh->add_comment("OMPIBot error: No milestone is set on issue $gh->issue");
         } else {
@@ -448,9 +448,9 @@ function find_nomilestone($gh)
     }
 }
 
-#
-# Search for assign:<name>
-#
+/*
+ * Search for assign:<name>
+ */
 function find_assign($gh)
 {
     if (0 == preg_match_all("/\bassign:(\S+)\b/m", $gh->body, $matches)) {
@@ -460,17 +460,19 @@ function find_assign($gh)
     if (count($matches[1]) == 1) {
 
         $user = $matches[1][0];
-        # If the username begins with @, strip it off (for convenience).
+        /* If the username begins with @, strip it off (for
+         * convenience). */
         if (preg_match("/^\@/", $user)) {
             $user = substr($user, 1);
         }
 
-        # JMS Error if the user does not exist or is not part of
-        # this organization
+        /* JMS Error if the user does not exist or is not part of
+         * this organization */
         if (!is_organization_member($gh, $user)) {
             $gh->add_comment("OMPIBot error: User $user is not valid for issue $gh->issue");
         } else {
-            # JMS It's ok to override a user that was already assigned
+            /* JMS It's ok to override a user that was already
+             * assigned */
             set_issue_assignee($gh, $user);
         }
     } else if (count($matches[1]) > 1) {
@@ -478,9 +480,9 @@ function find_assign($gh)
     }
 }
 
-#
-# Search for unassign:
-#
+/*
+ * Search for unassign:
+ */
 function find_noassign($gh)
 {
     if (0 == preg_match_all("/\bunassign:\b/m", $gh->body, $matches)) {
@@ -488,7 +490,7 @@ function find_noassign($gh)
     }
 
     if (count($matches) == 1) {
-        # JMS Error if the user is not already set on the issue
+        /* JMS Error if the user is not already set on the issue */
         if (!issue_assigned($gh)) {
             $gh->add_comment("OMPIBot error: No user is assigned to issue $gh->issue");
         } else {
