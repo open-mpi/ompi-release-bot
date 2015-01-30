@@ -359,6 +359,13 @@ function remove_issue_assignee($gh) {
 #
 function find_label($gh)
 {
+    # Hard-coded shortcut: ":+1:" is a shortcut for the "reviewed"/i
+    # label (if it exists).
+    if (preg_match_all("/\b:\+1:\b/m", $gh->body, $matches) > 0 &&
+        label_exists($gh, "reviewed")) {
+        $gh->body .= "\nlabel:reviewed\n";
+    }
+
     if (0 == preg_match_all("/\blabel:(\S+)\b/m", $gh->body, $matches)) {
         return;
     }
