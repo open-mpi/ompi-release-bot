@@ -228,7 +228,7 @@ function is_organization_member($gh, $reviewer) {
     }
 }
 
-/* return true if the given label exists */
+/* return true if the given label exists (case-insensitive search) */
 function label_exists ($gh, $label) {
     global $etag;
     if (!isset($gh->available_labels)) {
@@ -258,10 +258,18 @@ function label_exists ($gh, $label) {
         $gh->available_labels = $labels;
     }
 
-    return isset($gh->available_labels[$label]);
+    /* Look through the labels (with case-insensitive searching) and
+     * see if we can find the desired label */
+    foreach ($gh->available_labels as $l) {
+        if (strcasecmp($l, $label) == true) {
+            return true;
+        }
+    }
+    return false;
 }
 
-/* return true if the given milestone exists */
+/* return true if the given milestone exists (case-insensitive
+ * search) */
 function milestone_exists($gh, $milestone) {
     global $etag;
     if (file_exists("milestones.json")) {
@@ -291,25 +299,43 @@ function milestone_exists($gh, $milestone) {
     unset($milestones['ETag']);
     $gh->available_milestones = $milestones;
 
-    return isset($gh->available_milestones[$milestone]);
-}
-
-function label_set_on_issue($gh, $label) {
-    $found = false;
-    foreach ($gh->labels as $idx => $name) {
-        if (strcmp($name, $label) == 0) {
-            $found = true;
+    /* Look through the milestones (with case-insensitive searching)
+     * and see if we can find the desired milestone */
+    foreach ($gh->available_milestones as $m) {
+        if (strcasecmp($m, $milestone) == true) {
+            return true;
         }
     }
-    return $found;
+    return false;
 }
 
+/*
+ * Case-insensitive search to see if a given label is set
+ */
+function label_set_on_issue($gh, $label) {
+    foreach ($gh->labels as $idx => $name) {
+        if (strcasecmp($name, $label) == 0) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/*
+ * Set a (case-insensitive) label on an issue
+ */
 function set_issue_label($gh, $label) {
     $found = false;
     foreach ($gh->labels as $idx => $name) {
-        if (strcmp($name, $label) == 0) {
+        if (strcasecmp($name, $label) == 0) {
             print_debug("set_issue_label " . $idx . " => " . $name . "\n");
             $found = true;
+            /* Use the actual label name (since this was a
+             * case-insensitive search) */
+            /* JMS Should this be $idx or $name?  I'm not sure what
+             * the keys are and what the values are in gh->labels */
+            $label = $name;
         }
     }
     if (!$found) {
@@ -321,9 +347,14 @@ function set_issue_label($gh, $label) {
     }
 }
 
+/*
+ * Remove a (case-insensitive) label on an issue
+ */
 function remove_issue_label($gh, $label) {
     foreach ($gh->labels as $idx => $name) {
-        if (strcmp($name, $label) == 0) {
+        if (strcasecmp($name, $label) == 0) {
+            /* JMS Should this be $idx or $name?  I'm not sure what
+             * the keys are and what the values are in gh->labels */
             unset($gh->labels[$idx]);
             $gh->labelsChanged = true;
         }
@@ -334,8 +365,16 @@ function milestone_set_on_issue($gh) {
     return isset($gh->payload['issue']['milestone']);
 }
 
+/*
+ * Set a (case-insensitive) label on a milestone
+ */
 function set_issue_milestone($gh, $milestone) {
-    $gh->request['milestone'] = $gh->available_milestones[$milestone];
+    foreach ($gh->available_milestones as $m) {
+        if (strcasecmp($m, $milestone) == 0) {
+            $gh->request['milestone'] = $m;
+            return;
+        }
+    }
 }
 
 function remove_issue_milestone($gh) {
@@ -346,6 +385,10 @@ function issue_assigned($gh) {
     return isset($gh->payload['issue']['assignee']);
 }
 
+/*
+ * No need for case-insensitive searches here; we're assuming that
+ * GitHub will treat username "foo" the same as username "Foo".
+ */
 function set_issue_assignee($gh, $user) {
     $gh->request['assignee'] = $user;
 }
