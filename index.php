@@ -399,14 +399,23 @@ function remove_issue_assignee($gh) {
     $gh->request['assignee'] = null;
 }
 
+#######################################################################
+# JMS TESTING
+$gh = new GitHubObject;
+$gh->body = "\n:+1:\n";
+find_label($gh);
+exit(0);
+#######################################################################
+
 /*
  * Search for label:<name>
  */
 function find_label($gh)
 {
     /* Hard-coded shortcut: ":+1:" is a shortcut for the "reviewed"/i
-     * label (if it exists). */
-    if (preg_match_all("/\b:\+1:\b/m", $gh->body, $matches) > 0 &&
+     * label (if it exists).  Note that : are \W characters, so we
+     * have to use \B here instead of \b. */
+    if (preg_match_all("/\B:\+1:\B/m", $gh->body, $matches) > 0 &&
         label_exists($gh, "reviewed")) {
         $gh->body .= "\nlabel:reviewed\n";
     }
