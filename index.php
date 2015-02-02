@@ -399,14 +399,6 @@ function remove_issue_assignee($gh) {
     $gh->request['assignee'] = null;
 }
 
-#######################################################################
-# JMS TESTING
-$gh = new GitHubObject;
-$gh->body = "\n:+1:\n";
-find_label($gh);
-exit(0);
-#######################################################################
-
 /*
  * Search for label:<name>
  */
