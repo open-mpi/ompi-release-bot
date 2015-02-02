@@ -46,7 +46,6 @@ class GitHubObject {
             print_debug("not an issue nor a pull_request !\n");
             print_debug(json_encode($payload) . "\n");
         }
-        print_debug("this issue is " . $this->issue . "\n");
     }
 
     public function set_body_from($from) {
@@ -119,7 +118,7 @@ class GitHubObject {
         curl_setopt($ch, CURLOPT_POST, 1);
     
         if ($this->labelsChanged) {
-            $this->request['labels'] = $this->labels;
+            $this->request['labels'] = array_values($this->labels);
         }
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($this->request));
 
@@ -267,8 +266,8 @@ function label_exists ($gh, $label) {
 
     /* Look through the labels (with case-insensitive searching) and
      * see if we can find the desired label */
-    foreach ($gh->available_labels as $l) {
-        if (strcasecmp($l, $label) == true) {
+    foreach ($gh->available_labels as $l => $dummy) {
+        if (strcasecmp($l, $label) == 0) {
             return true;
         }
     }
@@ -291,7 +290,6 @@ function milestone_exists($gh, $milestone) {
 
     $reply = get_github($gh, "milestones", $httpCode);
 
-    print_debug("milestone_exists: " . $httpCode . "\n");
     if ($httpCode == 200) {
         $milestones['ETag'] = $etag;
         for($i=0; $i < count($reply); $i++) {
@@ -299,7 +297,6 @@ function milestone_exists($gh, $milestone) {
         }
         $fd = fopen("milestones.json", "w") or die ("could not open milestones.json\n");
         $output = json_encode($milestones);
-        print_debug("writing XXX" . $output . "XXX\n");
         fwrite($fd, $output, strlen($output));
         fclose($fd);
     }
@@ -308,8 +305,8 @@ function milestone_exists($gh, $milestone) {
 
     /* Look through the milestones (with case-insensitive searching)
      * and see if we can find the desired milestone */
-    foreach ($gh->available_milestones as $m) {
-        if (strcasecmp($m, $milestone) == true) {
+    foreach ($gh->available_milestones as $m => $n) {
+        if (strcasecmp($m, $milestone) == 0) {
             return true;
         }
     }
@@ -334,14 +331,12 @@ function label_set_on_issue($gh, $label) {
  */
 function set_issue_label($gh, $label) {
     $found = false;
-    foreach ($gh->labels as $idx => $name) {
+    foreach ($gh->labels as $name => $dummy) {
         if (strcasecmp($name, $label) == 0) {
             print_debug("set_issue_label " . $idx . " => " . $name . "\n");
             $found = true;
             /* Use the actual label name (since this was a
              * case-insensitive search) */
-            /* JMS Should this be $idx or $name?  I'm not sure what
-             * the keys are and what the values are in gh->labels */
             $label = $name;
         }
     }
@@ -376,9 +371,9 @@ function milestone_set_on_issue($gh) {
  * Set a (case-insensitive) label on a milestone
  */
 function set_issue_milestone($gh, $milestone) {
-    foreach ($gh->available_milestones as $m) {
+    foreach ($gh->available_milestones as $m => $n) {
         if (strcasecmp($m, $milestone) == 0) {
-            $gh->request['milestone'] = $m;
+            $gh->request['milestone'] = $n;
             return;
         }
     }
@@ -483,7 +478,6 @@ function find_milestone($gh)
 function find_nomilestone($gh)
 {
     if (0 == preg_match_all("/\bnomilestone:\B/m", $gh->body, $matches)) {
-        print_debug("find_nomilestone found nothing ...\n");
         return;
     }
 
@@ -537,7 +531,6 @@ function find_assign($gh)
 function find_noassign($gh)
 {
     if (0 == preg_match_all("/\bunassign:\B/m", $gh->body, $matches)) {
-        print_debug("find_noassign found nothing ...\n");
         return;
     }
 
