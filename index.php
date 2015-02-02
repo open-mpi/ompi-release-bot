@@ -482,7 +482,8 @@ function find_milestone($gh)
  */
 function find_nomilestone($gh)
 {
-    if (0 == preg_match_all("/\bnomilestone:\b/m", $gh->body, $matches)) {
+    if (0 == preg_match_all("/\bnomilestone:\B/m", $gh->body, $matches)) {
+        print_debug("find_nomilestone found nothing ...\n");
         return;
     }
 
@@ -535,7 +536,7 @@ function find_assign($gh)
  */
 function find_noassign($gh)
 {
-    if (0 == preg_match_all("/\bunassign:\b/m", $gh->body, $matches)) {
+    if (0 == preg_match_all("/\bunassign:\B/m", $gh->body, $matches)) {
         print_debug("find_noassign found nothing ...\n");
         return;
     }
