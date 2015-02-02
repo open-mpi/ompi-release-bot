@@ -3,6 +3,7 @@
 $org = "open-mpi";
 $user = "ggouaillardet";
 $repo = "sandbox";
+$bot = "ompiteam-bot";
 $token = "";
 $secret = "";
 

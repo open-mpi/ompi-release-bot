@@ -24,7 +24,6 @@ class GitHubObject {
         $this->secret = $secret;
         $this->comment = "";
         $this->request = Array();
-        print("org=$this->org\nuser=$this->user\nrepo=$this->repo\ntoken=$this->token\n");
     }
 
     public function set_proxy($proxy) {
@@ -537,6 +536,7 @@ function find_assign($gh)
 function find_noassign($gh)
 {
     if (0 == preg_match_all("/\bunassign:\b/m", $gh->body, $matches)) {
+        print_debug("find_noassign found nothing ...\n");
         return;
     }
 
@@ -634,8 +634,13 @@ $event = $_SERVER['HTTP_X_GITHUB_EVENT'];
 $fn = "process_" . $event;
 
 if (!function_exists($fn)) {
-   print_debug("Nothing to do: unknown event\n");
-   return;
+    print_debug("Nothing to do: unknown event\n");
+    return;
+}
+
+if (isset($payload['sender']['login']) && (strcmp($payload['sender']['login'],$bot) == 0)) {
+    print_debug("Nothing to do: sent by " . $bot . "\n");
+    return;
 }
 
 $gh = new GitHubObject;
