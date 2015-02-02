@@ -33,13 +33,21 @@ class GitHubObject {
 
     public function set_payload($payload) {
         $this->payload = $payload;
-        $this->issue = $payload['issue']['number'];
         $this->labels = Array();
-        foreach ($payload['issue']['labels'] as $label) {
-            print_debug("set_payload: " . $label['name'] . "\n");
-            $this->labels[count($this->labels)] = $label['name'];
-        }
         $this->labelsChanged = false;
+        if (isset($payload['issue'])) {
+            $this->issue = $payload['issue']['number'];
+            foreach ($payload['issue']['labels'] as $label) {
+                print_debug("set_payload: " . $label['name'] . "\n");
+                $this->labels[count($this->labels)] = $label['name'];
+            }
+        } elseif (isset($payload['pull_request'])) {
+            $this->issue = $payload['pull_request']['number'];
+        } else {
+            print_debug("not an issue nor a pull_request !\n");
+            print_debug(json_encode($payload) . "\n");
+        }
+        print_debug("this issue is " . $this->issue . "\n");
     }
 
     public function set_body_from($from) {
@@ -580,6 +588,16 @@ function process_issue_comment($gh) {
 function process_issues($gh) {
     if(strcmp($gh->payload['action'], "created") == 0) {
         $gh->set_body_from('issue');
+        process_comment_body($gh);
+    } else {
+        print_debug("nothing to do for action " . $payload['action']);
+    }
+}
+
+/* a pull request has been opened */
+function process_pull_request($gh) {
+    if(strcmp($gh->payload['action'], "opened") == 0) {
+        $gh->set_body_from('pull_request');
         process_comment_body($gh);
     } else {
         print_debug("nothing to do for action " . $payload['action']);
