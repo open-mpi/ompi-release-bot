@@ -13,14 +13,16 @@ class GitHubObject {
     public $proxy;
     public $repo;
     public $token;
+    public $org_token;
     public $user;
     public $request;
 
-    public function init($org, $user, $repo, $token, $secret) {
+    public function init($org, $user, $repo, $token, $org_token, $secret) {
         $this->org = $org;
         $this->user = $user;
         $this->repo = $repo;
         $this->token = $token;
+        $this->org_token = $org_token;
         $this->secret = $secret;
         $this->comment = "";
         $this->request = Array();
@@ -657,7 +659,7 @@ if (isset($payload['sender']['login']) && (strcmp($payload['sender']['login'],$b
 }
 
 $gh = new GitHubObject;
-$gh->init($org, $user, $repo, $token, $secret);
+$gh->init($org, $user, $repo, $token, $org_token, $secret);
 if (isset($proxy)) {
     $gh->set_proxy($proxy);
 }
