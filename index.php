@@ -433,7 +433,15 @@ function find_label($gh)
  */
 function find_nolabel($gh)
 {
-    if (0 == preg_match_all("/\blabelno:(\S+)\b/m", $gh->body, $matches)) {
+    /* Hard-coded shortcut: ":-1:" is a shortcut for removing the
+     * "reviewed"/i label (if it exists).  Note that : are \W
+     * characters, so we have to use \B here instead of \b. */
+    if (preg_match_all("/\B:\-1:\B/m", $gh->body, $matches) > 0 &&
+        label_exists($gh, "reviewed")) {
+        $gh->body .= "\nnolabel:reviewed\n";
+    }
+
+    if (0 == preg_match_all("/\bnolabel:(\S+)\b/m", $gh->body, $matches)) {
         return;
     }
 
