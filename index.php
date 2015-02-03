@@ -508,30 +508,39 @@ function find_nomilestone($gh)
  */
 function find_assign($gh)
 {
-    if (0 == preg_match_all("/\bassign:(\S+)\b/m", $gh->body, $matches)) {
+    if (0 != preg_match_all("/\bassign:(\S+)\b/m", $gh->body, $matches)) {
+        if (count($matches[1]) == 1) {
+            $user = $matches[1][0];
+            /* If the username begins with @, strip it off (for
+             * convenience). */
+            if (preg_match("/^\@/", $user)) {
+                $user = substr($user, 1);
+            }
+        } else if (count($matches[1]) > 1) {
+            $gh->add_comment("OMPIBot error: Cannot assign more than one user on an issue");
+            return;
+        }
+    } else if (0 != preg_match_all("/\bassign:(\s+)@(\S+)\b/m", $gh->body, $matches)) {
+        if (count($matches[1]) == 1) {
+            $user = $matches[2][0];
+        } else if (count($matches[1]) > 1) {
+            $gh->add_comment("OMPIBot error: Cannot assign more than one user on an issue");
+            return;
+        }
+    } else {
         return;
     }
 
-    if (count($matches[1]) == 1) {
-
-        $user = $matches[1][0];
-        /* If the username begins with @, strip it off (for
-         * convenience). */
-        if (preg_match("/^\@/", $user)) {
-            $user = substr($user, 1);
-        }
-
-        /* JMS Error if the user does not exist or is not part of
-         * this organization */
-        if (!is_organization_member($gh, $user)) {
-            $gh->add_comment("OMPIBot error: User $user is not valid for issue $gh->issue");
-        } else {
-            /* JMS It's ok to override a user that was already
-             * assigned */
-            set_issue_assignee($gh, $user);
-        }
-    } else if (count($matches[1]) > 1) {
-        $gh->add_comment("OMPIBot error: Cannot assign more than one user on an issue");
+    /* JMS Error if the user does not exist or is not part of
+     * this organization
+     * strictly speaking, the bot should test if the user is part of the assignees list,
+     * and in the case of the ompi-release repo, both tests should be equivalent */
+    if (!is_organization_member($gh, $user)) {
+        $gh->add_comment("OMPIBot error: User $user is not valid for issue $gh->issue");
+    } else {
+        /* JMS It's ok to override a user that was already
+         * assigned */
+        set_issue_assignee($gh, $user);
     }
 }
 
