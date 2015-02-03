@@ -214,7 +214,7 @@ function is_organization_member($gh, $reviewer) {
     if (isset($proxy)) curl_setopt($ch, CURLOPT_PROXY, $gh->proxy);
 
     // set header
-    $headers = array('User-Agent: curl-php', 'Authorization: token '.$gh->token);
+    $headers = array('User-Agent: curl-php', 'Authorization: token '.$gh->org_token);
     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 
     // return the transfer as string

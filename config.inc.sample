@@ -5,6 +5,7 @@ $user = "ggouaillardet";
 $repo = "sandbox";
 $bot = "ompiteam-bot";
 $token = "";
+$org_token = "";
 $secret = "";
 
 // $proxy = "protocol://proxy:port";
