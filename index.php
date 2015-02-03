@@ -59,7 +59,6 @@ class GitHubObject {
 
     /* issue a github comment */
     public function comment_github_issue() {
-        print("---\norg=$this->org\nuser=$this->user\nrepo=$this->repo\ntoken=$this->token\n");
         // create curl resource
         $ch = curl_init();
 
@@ -97,7 +96,6 @@ class GitHubObject {
 
     /* issue a github patch request */
     public function patch_github_issue() {
-        print("---\norg=$this->org\nuser=$this->user\nrepo=$this->repo\ntoken=$this->token\n");
         // create curl resource
         $ch = curl_init();
 
@@ -131,7 +129,10 @@ class GitHubObject {
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
         print "PATCH request returned " . $httpCode . "\n";
-        print "PATCH request on issue " . $this->issue . " was :\n" . json_encode($this->request) ;
+        if ($httpCode != 200) {
+            $this->add_comment("Something has gone wrong (error " . $httpCode . ")\n");
+            $this->add_comment("@ggouaillardet @jsquyres please have a look at it !\n");
+        }
 
         // close curl resource
         curl_close($ch);
