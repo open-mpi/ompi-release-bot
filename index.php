@@ -134,8 +134,8 @@ class GitHubObject {
 
         print "PATCH request returned " . $httpCode . "\n";
         if ($httpCode != 200) {
-            $this->add_comment("Something has gone wrong (error " . $httpCode . ")\n");
-            $this->add_comment("@ggouaillardet @jsquyres please have a look at it !\n");
+            $this->add_comment("Something has gone wrong (error " . $httpCode . ").\n");
+            $this->add_comment("@ggouaillardet @jsquyres please have a look at it!\n");
         }
 
         // close curl resource
@@ -424,9 +424,9 @@ function find_label($gh)
     foreach ($matches[1] as $label) {
         print "handling label ". $label ."\n";
         if (label_set_on_issue($gh, $label)) {
-            $gh->add_comment("OMPIBot error: Label $label is already set on issue $gh->issue");
+            $gh->add_comment("OMPIBot error: Label \"$label\" is already set on issue $gh->issue.");
         } else if (!label_exists($gh, $label)) {
-            $gh->add_comment("OMPIBot error: Label $label does not exist");
+            $gh->add_comment("OMPIBot error: Label \"$label\" does not exist.");
         } else {
             set_issue_label($gh, $label);
         }
@@ -452,9 +452,9 @@ function find_nolabel($gh)
 
     foreach ($matches[1] as $label) {
         if (!label_set_on_issue($gh, $label)) {
-            $gh->add_comment("OMPIBot error: Label $label is not set on issue $gh->issue");
+            $gh->add_comment("OMPIBot error: Label \"$label\" is not set on issue $gh->issue.");
         } else if (!label_exists($gh, $label)) {
-            $gh->add_comment("OMPIBot error: Label $label does not exist");
+            $gh->add_comment("OMPIBot error: Label \"$label\" does not exist.");
         } else {
             remove_issue_label($gh, $label);
         }
@@ -475,14 +475,14 @@ function find_milestone($gh)
 
         /* JMS Error if the milestone does not exist */
         if (!milestone_exists($gh, $milestone)) {
-            $gh->add_comment("OMPIBot error: Milestone $milestone does not exist");
+            $gh->add_comment("OMPIBot error: Milestone \"$milestone\" does not exist.");
         } else {
             /* JMS It's ok to override a milestone that was already
              * set */
             set_issue_milestone($gh, $milestone);
         }
     } else if (count($matches[1]) > 1) {
-        $gh->add_comment("OMPIBot error: Cannot set more than one milestone on an issue");
+        $gh->add_comment("OMPIBot error: Cannot set more than one milestone on an issue.");
     }
 }
 
@@ -498,12 +498,12 @@ function find_nomilestone($gh)
     if (count($matches) == 1) {
         /* JMS Error if a milestone is not already set on the issue */
         if (!milestone_set_on_issue($gh)) {
-            $gh->add_comment("OMPIBot error: No milestone is set on issue $gh->issue");
+            $gh->add_comment("OMPIBot error: No milestone is set on issue $gh->issue.");
         } else {
             remove_issue_milestone($gh);
         }
     } else {
-        $gh->add_comment("OMPIBot error: Cannot remove more than one milestone from an issue");
+        $gh->add_comment("OMPIBot error: Cannot remove more than one milestone from an issue.");
     }
 }
 
@@ -521,26 +521,26 @@ function find_assign($gh)
                 $user = substr($user, 1);
             }
         } else if (count($matches[1]) > 1) {
-            $gh->add_comment("OMPIBot error: Cannot assign more than one user on an issue");
+            $gh->add_comment("OMPIBot error: Cannot assign more than one user on an issue.");
             return;
         }
     } else if (0 != preg_match_all("/\bassign:(\s+)@(\S+)\b/m", $gh->body, $matches)) {
         if (count($matches[1]) == 1) {
             $user = $matches[2][0];
         } else if (count($matches[1]) > 1) {
-            $gh->add_comment("OMPIBot error: Cannot assign more than one user on an issue");
+            $gh->add_comment("OMPIBot error: Cannot assign more than one user on an issue.");
             return;
         }
     } else {
         return;
     }
 
-    /* JMS Error if the user does not exist or is not part of
-     * this organization
-     * strictly speaking, the bot should test if the user is part of the assignees list,
-     * and in the case of the ompi-release repo, both tests should be equivalent */
+    /* JMS Error if the user does not exist or is not part of this
+     * organization.  Strictly speaking, the bot should test if the
+     * user is part of the assignees list, and in the case of the
+     * ompi-release repo, both tests should be equivalent */
     if (!is_organization_member($gh, $user)) {
-        $gh->add_comment("OMPIBot error: User $user is not valid for issue $gh->issue");
+        $gh->add_comment("OMPIBot error: User $user is not valid for issue $gh->issue.");
     } else {
         /* JMS It's ok to override a user that was already
          * assigned */
@@ -560,12 +560,12 @@ function find_noassign($gh)
     if (count($matches) == 1) {
         /* JMS Error if the user is not already set on the issue */
         if (!issue_assigned($gh)) {
-            $gh->add_comment("OMPIBot error: No user is assigned to issue $gh->issue");
+            $gh->add_comment("OMPIBot error: No user is assigned to issue $gh->issue.");
         } else {
             remove_issue_assignee($gh);
         }
     } else {
-        $gh->add_comment("OMPIBot error: Cannot remove more than one user from an issue");
+        $gh->add_comment("OMPIBot error: Cannot remove more than one user from an issue.");
     }
 }
 
@@ -585,7 +585,7 @@ function process_comment_body($gh)
             is_organization_member($gh, $gh->sender)) {
             $gh->patch_github_issue();
         } else {
-            $gh->add_comment ("@" . $gh->sender . " only Open MPI developers can interact with the bot\n");
+            $gh->add_comment ("@" . $gh->sender . ": Sorry, only this repo's organization members can interact with this bot.\n");
         }
     } else {
         print "NO PATCH\n";
