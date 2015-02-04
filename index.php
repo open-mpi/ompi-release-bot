@@ -9,11 +9,12 @@ class GitHubObject {
     public $labels;
     public $labelsChanged;
     public $org;
+    public $org_token;
     public $payload;
     public $proxy;
     public $repo;
+    public $sender;
     public $token;
-    public $org_token;
     public $user;
     public $request;
 
@@ -34,6 +35,7 @@ class GitHubObject {
 
     public function set_payload($payload) {
         $this->payload = $payload;
+        $this->sender = $payload['sender']['login'];
         $this->labels = Array();
         $this->labelsChanged = false;
         if (isset($payload['issue'])) {
@@ -579,7 +581,12 @@ function process_comment_body($gh)
     find_noassign($gh);
 
     if ($gh->labelsChanged || count($gh->request)>0) {
-        $gh->patch_github_issue();
+        if ((isset($gh->request['assignee']) && (strcmp($gh->request['assignee'],$gh->sender) == 0)) ||
+            is_organization_member($gh, $gh->sender)) {
+            $gh->patch_github_issue();
+        } else {
+            $gh->add_comment ("@" . $gh->sender . " only Open MPI developers can interact with the bot\n");
+        }
     } else {
         print "NO PATCH\n";
     }
@@ -653,7 +660,12 @@ if (!function_exists($fn)) {
     return;
 }
 
-if (isset($payload['sender']['login']) && (strcmp($payload['sender']['login'],$bot) == 0)) {
+if (!isset($payload['sender']['login'])) {
+    print_debug("Unknown sender ! should not happen\n");
+    return;
+}
+$sender =  $payload['sender']['login'];
+if (strcmp($sender,$bot) == 0) {
     print_debug("Nothing to do: sent by " . $bot . "\n");
     return;
 }
