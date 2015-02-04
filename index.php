@@ -360,8 +360,8 @@ function set_issue_label($gh, $label) {
 function remove_issue_label($gh, $label) {
     foreach ($gh->labels as $idx => $name) {
         if (strcasecmp($name, $label) == 0) {
-            /* JMS Should this be $idx or $name?  I'm not sure what
-             * the keys are and what the values are in gh->labels */
+            /* JMS Should this be $idx or $name?  I'm not sure what the
+             * keys are and what the values are in gh->labels */
             unset($gh->labels[$idx]);
             $gh->labelsChanged = true;
         }
@@ -473,12 +473,11 @@ function find_milestone($gh)
     if (count($matches[1]) == 1) {
         $milestone = $matches[1][0];
 
-        /* JMS Error if the milestone does not exist */
+        /* rror if the milestone does not exist */
         if (!milestone_exists($gh, $milestone)) {
             $gh->add_comment("OMPIBot error: Milestone \"$milestone\" does not exist.");
         } else {
-            /* JMS It's ok to override a milestone that was already
-             * set */
+            /* It's ok to override a milestone that was already set */
             set_issue_milestone($gh, $milestone);
         }
     } else if (count($matches[1]) > 1) {
@@ -496,7 +495,7 @@ function find_nomilestone($gh)
     }
 
     if (count($matches) == 1) {
-        /* JMS Error if a milestone is not already set on the issue */
+        /* Error if a milestone is not already set on the issue */
         if (!milestone_set_on_issue($gh)) {
             $gh->add_comment("OMPIBot error: No milestone is set on issue $gh->issue.");
         } else {
@@ -535,15 +534,14 @@ function find_assign($gh)
         return;
     }
 
-    /* JMS Error if the user does not exist or is not part of this
+    /* Error if the user does not exist or is not part of this
      * organization.  Strictly speaking, the bot should test if the
      * user is part of the assignees list, and in the case of the
      * ompi-release repo, both tests should be equivalent */
     if (!is_organization_member($gh, $user)) {
         $gh->add_comment("OMPIBot error: User $user is not valid for issue $gh->issue.");
     } else {
-        /* JMS It's ok to override a user that was already
-         * assigned */
+        /* It's ok to override a user that was already assigned */
         set_issue_assignee($gh, $user);
     }
 }
@@ -558,7 +556,7 @@ function find_noassign($gh)
     }
 
     if (count($matches) == 1) {
-        /* JMS Error if the user is not already set on the issue */
+        /* Error if the user is not already set on the issue */
         if (!issue_assigned($gh)) {
             $gh->add_comment("OMPIBot error: No user is assigned to issue $gh->issue.");
         } else {
