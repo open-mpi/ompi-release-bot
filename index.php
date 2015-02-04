@@ -608,7 +608,8 @@ function process_issue_comment($gh) {
 
 /* an issue has been created */
 function process_issues($gh) {
-    if(strcmp($gh->payload['action'], "created") == 0) {
+    if(strcmp($gh->payload['action'], "opened") == 0 ||
+       strcmp($gh->payload['action'], "created") == 0) {
         $gh->set_body_from('issue');
         process_comment_body($gh);
     } else {
