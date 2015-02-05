@@ -141,6 +141,39 @@ class GitHubObject {
         // close curl resource
         curl_close($ch);
     }
+
+    /* remove the "reviewed" label from a PR */
+    function remove_label($label) {
+        // create curl resource
+        $ch = curl_init();
+
+        // set url
+        curl_setopt($ch, CURLOPT_URL, "https://api.github.com/repos/" . $this->user . "/" . $this->repo . "/issues/" . $this->issue . "/labels/" . $label );
+
+        // set proxy
+        if (isset($this->proxy)) curl_setopt($ch, CURLOPT_PROXY, $this->proxy);
+
+        // set header
+        $headers = array('User-Agent: curl-php', 'Authorization: token '.$this->token);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
+        // this is a PATCH request
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'DELETE');
+
+        // return the transfer as string
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+
+        // $output contains the output string
+        $output = curl_exec($ch);
+
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+        print "DELETE request returned " . $httpCode . "\n";
+
+        // close curl resource
+        curl_close($ch);
+    }
+
 }
 
 function print_debug ($str) {
@@ -621,6 +654,10 @@ function process_pull_request($gh) {
     if(strcmp($gh->payload['action'], "opened") == 0) {
         $gh->set_body_from('pull_request');
         process_comment_body($gh);
+    } elseif (strcmp($gh->payload['action'], "synchronize") == 0) {
+        $gh->set_body_from('pull_request');
+        $gh->remove_label('RM-Approved');
+        $gh->remove_label('reviewed');
     } else {
         print_debug("nothing to do for action " . $payload['action']);
     }
