@@ -349,6 +349,9 @@ function set_issue_label($gh, $label) {
         print "set_issue_label: NOT found ".$label."\n";
         $gh->labels[count($gh->labels)] = $label;
         $gh->labelsChanged = true;
+        if ((strcmp($label, "reviewed") == 0) || (strcmp($label, "rm-approved")) {
+            remove_issue_label($gh, "pushed-back");
+        }
     } else {
         print "set_issue_label: FOUND ".$label."\n";
     }
@@ -360,8 +363,6 @@ function set_issue_label($gh, $label) {
 function remove_issue_label($gh, $label) {
     foreach ($gh->labels as $idx => $name) {
         if (strcasecmp($name, $label) == 0) {
-            /* JMS Should this be $idx or $name?  I'm not sure what the
-             * keys are and what the values are in gh->labels */
             unset($gh->labels[$idx]);
             $gh->labelsChanged = true;
         }
