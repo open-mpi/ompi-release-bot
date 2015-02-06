@@ -349,7 +349,7 @@ function set_issue_label($gh, $label) {
         print "set_issue_label: NOT found ".$label."\n";
         $gh->labels[count($gh->labels)] = $label;
         $gh->labelsChanged = true;
-        if ((strcmp($label, "reviewed") == 0) || (strcmp($label, "rm-approved")) {
+        if ((strcmp($label, "reviewed") == 0) || (strcmp($label, "rm-approved") == 0)) {
             remove_issue_label($gh, "pushed-back");
         }
     } else {
@@ -365,7 +365,11 @@ function remove_issue_label($gh, $label) {
         if (strcasecmp($name, $label) == 0) {
             unset($gh->labels[$idx]);
             $gh->labelsChanged = true;
+            $label = $name;
         }
+    }
+    if ((strcmp($label, "reviewed") ==0) || (strcmp($label, "RM-approved") == 0)) {
+        set_issue_label($gh, "pushed-back");
     }
 }
 
@@ -452,7 +456,7 @@ function find_nolabel($gh)
     }
 
     foreach ($matches[1] as $label) {
-        if (!label_set_on_issue($gh, $label)) {
+        if ((strcmp($label, "reviewed") != 0) && !label_set_on_issue($gh, $label)) {
             $gh->add_comment("OMPIBot error: Label \"$label\" is not set on issue $gh->issue.");
         } else if (!label_exists($gh, $label)) {
             $gh->add_comment("OMPIBot error: Label \"$label\" does not exist.");
