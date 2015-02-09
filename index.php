@@ -419,10 +419,10 @@ function find_label($gh)
      * have to use \B here instead of \b. */
     if (preg_match_all("/\B:\+1:\B/m", $gh->body, $matches) > 0 &&
         label_exists($gh, "reviewed")) {
-        $gh->body .= "\nlabel:reviewed\n";
+        $gh->body .= "\nbot:label:reviewed\n";
     }
 
-    if (0 == preg_match_all("/\blabel:(\S+)\b/m", $gh->body, $matches)) {
+    if (0 == preg_match_all("/\bbot:label:(\S+)\b/m", $gh->body, $matches)) {
         return;
     }
 
@@ -448,10 +448,10 @@ function find_nolabel($gh)
      * characters, so we have to use \B here instead of \b. */
     if (preg_match_all("/\B:\-1:\B/m", $gh->body, $matches) > 0 &&
         label_exists($gh, "reviewed")) {
-        $gh->body .= "\nnolabel:reviewed\n";
+        $gh->body .= "\nbot:nolabel:reviewed\n";
     }
 
-    if (0 == preg_match_all("/\bnolabel:(\S+)\b/m", $gh->body, $matches)) {
+    if (0 == preg_match_all("/\bbot:nolabel:(\S+)\b/m", $gh->body, $matches)) {
         return;
     }
 
@@ -471,7 +471,7 @@ function find_nolabel($gh)
  */
 function find_milestone($gh)
 {
-    if (0 == preg_match_all("/\bmilestone:(\S+)\b/m", $gh->body, $matches)) {
+    if (0 == preg_match_all("/\bbot:milestone:(\S+)\b/m", $gh->body, $matches)) {
         return;
     }
 
@@ -495,7 +495,7 @@ function find_milestone($gh)
  */
 function find_nomilestone($gh)
 {
-    if (0 == preg_match_all("/\bnomilestone:\B/m", $gh->body, $matches)) {
+    if (0 == preg_match_all("/\bbot:nomilestone\B/m", $gh->body, $matches)) {
         return;
     }
 
@@ -516,7 +516,7 @@ function find_nomilestone($gh)
  */
 function find_assign($gh)
 {
-    if (0 != preg_match_all("/\bassign:(\S+)\b/m", $gh->body, $matches)) {
+    if (0 != preg_match_all("/\bbot:assign:(\S+)\b/m", $gh->body, $matches)) {
         if (count($matches[1]) == 1) {
             $user = $matches[1][0];
             /* If the username begins with @, strip it off (for
@@ -528,7 +528,7 @@ function find_assign($gh)
             $gh->add_comment("OMPIBot error: Cannot assign more than one user on an issue.");
             return;
         }
-    } else if (0 != preg_match_all("/\bassign:(\s+)@(\S+)\b/m", $gh->body, $matches)) {
+    } else if (0 != preg_match_all("/\bbot:assign:(\s+)@(\S+)\b/m", $gh->body, $matches)) {
         if (count($matches[1]) == 1) {
             $user = $matches[2][0];
         } else if (count($matches[1]) > 1) {
@@ -556,7 +556,7 @@ function find_assign($gh)
  */
 function find_noassign($gh)
 {
-    if (0 == preg_match_all("/\bunassign:\B/m", $gh->body, $matches)) {
+    if (0 == preg_match_all("/\bbot:unassign\B/m", $gh->body, $matches)) {
         return;
     }
 
