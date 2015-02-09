@@ -1,4 +1,4 @@
-<?php
+\<?php
 
 class GitHubObject {
     public $available_labels;
@@ -556,7 +556,7 @@ function find_assign($gh)
  */
 function find_noassign($gh)
 {
-    if (0 == preg_match_all("/\bbot:unassign\B/m", $gh->body, $matches)) {
+    if (0 == preg_match_all("/\bbot:unassign\b/m", $gh->body, $matches)) {
         return;
     }
 
