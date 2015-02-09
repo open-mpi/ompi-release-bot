@@ -495,7 +495,7 @@ function find_milestone($gh)
  */
 function find_nomilestone($gh)
 {
-    if (0 == preg_match_all("/\bbot:nomilestone\B/m", $gh->body, $matches)) {
+    if (0 == preg_match_all("/\bbot:nomilestone\b/m", $gh->body, $matches)) {
         return;
     }
 
