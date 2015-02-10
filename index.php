@@ -1,4 +1,4 @@
-\<?php
+<?php
 
 class GitHubObject {
     public $available_labels;
@@ -78,7 +78,7 @@ class GitHubObject {
 
         // set request
         curl_setopt($ch, CURLOPT_POST, 1);
-    
+
         $comment = array();
         $comment['body'] = $this->comment;
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($comment));
@@ -118,7 +118,7 @@ class GitHubObject {
 
         // set request
         curl_setopt($ch, CURLOPT_POST, 1);
-    
+
         if ($this->labelsChanged) {
             $this->request['labels'] = array_values($this->labels);
         }
