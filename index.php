@@ -1,5 +1,11 @@
 <?php
 
+/* Directory where to store temporary files */
+$cache_dir = "/tmp";
+
+/* Prefix for files */
+$file_prefix = "ompi-label-bot-";
+
 class GitHubObject {
     public $available_labels;
     public $available_milestones;
@@ -242,10 +248,14 @@ function is_organization_member($gh, $reviewer) {
 /* return true if the given label exists (case-insensitive search) */
 function label_exists ($gh, $label) {
     global $etag;
+    global $cache_dir;
+    global $file_prefix;
+
+    $file = "$cache_dir/$file_prefix" . "labels.json";
     if (!isset($gh->available_labels)) {
-        if (file_exists("labels.json")) {
-            $fd = fopen("labels.json", "r");
-            $labels = json_decode(fread($fd, filesize("labels.json")), true);
+        if (file_exists($file)) {
+            $fd = fopen($file, "r");
+            $labels = json_decode(fread($fd, filesize($files)), true);
             $etag = $labels['ETag'];
             fclose($fd);
         } else {
@@ -260,7 +270,7 @@ function label_exists ($gh, $label) {
             for($i=0; $i < count($reply); $i++) {
                 $labels[$reply[$i]['name']] = 'L';
             }
-            $fd = fopen("labels.json", "w") or die ("could not open labels.json\n");
+            $fd = fopen($file, "w") or die ("could not open $file\n");
             $output = json_encode($labels);
             fwrite($fd, $output, strlen($output));
             fclose($fd);
@@ -283,9 +293,13 @@ function label_exists ($gh, $label) {
  * search) */
 function milestone_exists($gh, $milestone) {
     global $etag;
-    if (file_exists("milestones.json")) {
-        $fd = fopen("milestones.json", "r");
-        $milestones= json_decode(fread($fd, filesize("milestones.json")), true);
+    global $cache_dir;
+    global $file_prefix;
+
+    $file = "$cache_dir/$file_prefix" . "milestones.json";
+    if (file_exists($file)) {
+        $fd = fopen($file, "r");
+        $milestones= json_decode(fread($fd, filesize($file)), true);
         $etag = $milestones['ETag'];
         fclose($fd);
     } else {
@@ -300,7 +314,7 @@ function milestone_exists($gh, $milestone) {
         for($i=0; $i < count($reply); $i++) {
             $milestones[$reply[$i]['title']] = $reply[$i]['number'];
         }
-        $fd = fopen("milestones.json", "w") or die ("could not open milestones.json\n");
+        $fd = fopen($file, "w") or die ("could not open $file\n");
         $output = json_encode($milestones);
         fwrite($fd, $output, strlen($output));
         fclose($fd);
