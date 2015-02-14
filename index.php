@@ -659,6 +659,10 @@ function process_pull_request($gh) {
     }
 }
 
+/****************************************************************************
+ * main
+ ****************************************************************************/
+
 /* check the existence of the X-Hub-Signature and X-GitHub-Event headers */
 if (!isset($_SERVER['HTTP_X_HUB_SIGNATURE']) ||
     !isset($_SERVER['HTTP_X_GITHUB_EVENT'])) {
