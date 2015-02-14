@@ -253,6 +253,8 @@ function label_exists ($gh, $label) {
 
     $file = "$cache_dir/$file_prefix" . "labels.json";
     if (!isset($gh->available_labels)) {
+        /* Read the file if it exists, or just give us an empty array
+         * if it doesn't */
         if (file_exists($file)) {
             $fd = fopen($file, "r");
             $labels = json_decode(fread($fd, filesize($files)), true);
@@ -263,14 +265,23 @@ function label_exists ($gh, $label) {
             unset($GLOBALS['etag']);
         }
 
+        /* Always try to read from Github.  Note that sometimes
+         * reading from Github may fail, because Github uses API rate
+         * limiting (https://developer.github.com/v3/#rate-limiting).
+         * Hopefully, we'll have already loaded a cache file in that
+         * case! */
         $reply = get_github($gh, "labels", $httpCode);
 
         if ($httpCode == 200) {
+            /* If the read from Github succeeded, check to merge in
+             * newer content from the Github read, and write out a new
+             * cache file. */
             $labels['ETag'] = $etag;
             for($i=0; $i < count($reply); $i++) {
                 $labels[$reply[$i]['name']] = 'L';
             }
-            $fd = fopen($file, "w") or die ("could not open $file\n");
+            $fd = fopen($file, "w") ||
+                die("could not open $file\n");
             $output = json_encode($labels);
             fwrite($fd, $output, strlen($output));
             fclose($fd);
@@ -296,6 +307,8 @@ function milestone_exists($gh, $milestone) {
     global $cache_dir;
     global $file_prefix;
 
+    /* See comments in label_exists() for a description of the cache
+     * file/read from Github scheme. */
     $file = "$cache_dir/$file_prefix" . "milestones.json";
     if (file_exists($file)) {
         $fd = fopen($file, "r");
