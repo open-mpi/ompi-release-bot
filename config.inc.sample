@@ -1,13 +1,14 @@
 <?php
 
 $org = "open-mpi";
-$user = "ggouaillardet";
-$repo = "sandbox";
+$user = "open-mpi";
+$repo = "ompi-release";
 $bot = "ompiteam-bot";
-$token = "";
-$org_token = "";
-$secret = "";
 
+$token = "...put your token in here...";
+$org_token = "...put your org token in here...";
+$secret = "...put your secret in here...";
+
+// Optional proxy
 // $proxy = "protocol://proxy:port";
-
 ?>
