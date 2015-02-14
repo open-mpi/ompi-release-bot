@@ -310,30 +310,32 @@ function milestone_exists($gh, $milestone) {
     /* See comments in label_exists() for a description of the cache
      * file/read from Github scheme. */
     $file = "$cache_dir/$file_prefix" . "milestones.json";
-    if (file_exists($file)) {
-        $fd = fopen($file, "r");
-        $milestones= json_decode(fread($fd, filesize($file)), true);
-        $etag = $milestones['ETag'];
-        fclose($fd);
-    } else {
-        $milestones = Array();
-        unset($GLOBALS['etag']);
-    }
-
-    $reply = get_github($gh, "milestones", $httpCode);
-
-    if ($httpCode == 200) {
-        $milestones['ETag'] = $etag;
-        for($i=0; $i < count($reply); $i++) {
-            $milestones[$reply[$i]['title']] = $reply[$i]['number'];
+    if (!isset($gh->available_labels)) {
+        if (file_exists($file)) {
+            $fd = fopen($file, "r");
+            $milestones= json_decode(fread($fd, filesize($file)), true);
+            $etag = $milestones['ETag'];
+            fclose($fd);
+        } else {
+            $milestones = Array();
+            unset($GLOBALS['etag']);
         }
-        $fd = fopen($file, "w") or die ("could not open $file\n");
-        $output = json_encode($milestones);
-        fwrite($fd, $output, strlen($output));
-        fclose($fd);
+
+        $reply = get_github($gh, "milestones", $httpCode);
+
+        if ($httpCode == 200) {
+            $milestones['ETag'] = $etag;
+            for($i=0; $i < count($reply); $i++) {
+                $milestones[$reply[$i]['title']] = $reply[$i]['number'];
+            }
+            $fd = fopen($file, "w") or die ("could not open $file\n");
+            $output = json_encode($milestones);
+            fwrite($fd, $output, strlen($output));
+            fclose($fd);
+        }
+        unset($milestones['ETag']);
+        $gh->available_milestones = $milestones;
     }
-    unset($milestones['ETag']);
-    $gh->available_milestones = $milestones;
 
     /* Look through the milestones (with case-insensitive searching)
      * and see if we can find the desired milestone */
