@@ -1,13 +1,54 @@
 <?php
 
-$org = "open-mpi";
+// Set this to be the name of the Github user or organization where
+// the repository that we will be monitoring lives.  For example, if
+// you are monitoring a personal repo, fill in the Github username
+// here.  If you are monitoring a Github origanization repo, fill in
+// the Github organization name here.
 $user = "open-mpi";
+
+// Set this to be the name of the organization that you will allow bot
+// actions from.  Any user who is not a member of this organiation
+// will have bot actions ignored.
+$org = "open-mpi";
+
+// Name of the Github repo that we are monitoring.
 $repo = "ompi-release";
+
+// Set this to be the Github username of the bot who will do the
+// actions.  This script will ignore comments/posts from this user (so
+// that it does not accidentally recusively process actions!).
 $bot = "ompiteam-bot";
 
-$token = "...put your token in here...";
-$org_token = "...put your org token in here...";
-$secret = "...put your secret in here...";
+// Get a "personal access token" for the user who will be performing
+// the bot actions (https://github.com/settings/tokens/new).  The
+// token should probably have the "repo" and "public_repo" checkmarks
+// set (if you need it to access private repos).
+$token = "...your token...";
+
+// JMS I'm not sure what this is for...?  So I just set it equal to
+// token for now.
+$org_token = $token;
+
+// Activate the bot by going to
+// https://github.com/<USER>/<REPO>/settings/hooks and creating a new
+// webhook:
+//
+// 1. The payload URL should be the public URL from which index.php is
+// accessible.
+//
+// 2. The content type should be application/json.
+//
+// 3. Create a secret string and put it in $secret, below.
+//
+// 4. Select "Let me select individual events", and select the
+// following events:
+// - Issues
+// - Pull Request
+// - Issue comment
+//
+// 5. Check the "Active" box to make it active.
+$secret = "...your secret...";
 
 // Optional proxy
 // $proxy = "protocol://proxy:port";
