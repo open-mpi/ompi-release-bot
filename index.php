@@ -605,12 +605,12 @@ function process_comment_body($gh)
 {
     print_debug("Checking body: ".$gh->body."\n\n");
 
-    find_label($gh);
     find_nolabel($gh);
-    find_milestone($gh);
+    find_label($gh);
     find_nomilestone($gh);
-    find_assign($gh);
+    find_milestone($gh);
     find_noassign($gh);
+    find_assign($gh);
 
     if ($gh->labelsChanged || count($gh->request)>0) {
         if ((isset($gh->request['assignee']) && (strcmp($gh->request['assignee'],$gh->sender) == 0)) ||
