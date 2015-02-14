@@ -1,5 +1,15 @@
 <?php
 
+// Local filesystem directory where to store temporary files
+$cache_dir = "/tmp";
+
+// Prefix for cache files in $cache_dir
+$file_prefix = "ompi-label-bot-";
+
+// Github usernames of maintainers who should be notified when things
+// go wrong
+$maintainers = "...put one or more \"at\"username github mentions here..."
+
 // Set this to be the name of the Github user or organization where
 // the repository that we will be monitoring lives.  For example, if
 // you are monitoring a personal repo, fill in the Github username
@@ -22,8 +32,8 @@ $bot = "ompiteam-bot";
 
 // Get a "personal access token" for the user who will be performing
 // the bot actions (https://github.com/settings/tokens/new).  The
-// token should probably have the "repo" and "public_repo" checkmarks
-// set (if you need it to access private repos).
+// token will need to have the "repo" checkmark set to function
+// properly.
 $token = "...your token...";
 
 // JMS I'm not sure what this is for...?  So I just set it equal to

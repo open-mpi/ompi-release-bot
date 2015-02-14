@@ -1,11 +1,5 @@
 <?php
 
-/* Directory where to store temporary files */
-$cache_dir = "/tmp";
-
-/* Prefix for files */
-$file_prefix = "ompi-label-bot-";
-
 class GitHubObject {
     public $available_labels;
     public $available_milestones;
@@ -73,13 +67,18 @@ class GitHubObject {
         $ch = curl_init();
 
         // set url
-        curl_setopt($ch, CURLOPT_URL, "https://api.github.com/repos/" . $this->user . "/" . $this->repo . "/issues/" . $this->issue . "/comments");
+        $curlopt_url = "https://api.github.com/repos/" .
+            $this->user . "/" . $this->repo . "/issues/" .
+            $this->issue . "/comments";
+        curl_setopt($ch, CURLOPT_URL, $curlopt_url);
 
         // set proxy
-        if (isset($this->proxy)) curl_setopt($ch, CURLOPT_PROXY, $this->proxy);
+        if (isset($this->proxy))
+            curl_setopt($ch, CURLOPT_PROXY, $this->proxy);
 
         // set header
-        $headers = array('User-Agent: curl-php', 'Authorization: token '.$this->token);
+        $headers = array('User-Agent: curl-php',
+                         'Authorization: token '.$this->token);
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 
         // set request
@@ -97,8 +96,10 @@ class GitHubObject {
 
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
+        print "POST comment to: $curlopt_url\n";
         print "POST comment returned " . $httpCode . "\n";
-        print "POST comment on issue " . $this->issue . " was :\n" . json_encode($comment) ;
+        print "POST comment on issue " . $this->issue . " was :\n" .
+            json_encode($comment) ;
 
         // close curl resource
         curl_close($ch);
@@ -110,14 +111,17 @@ class GitHubObject {
         $ch = curl_init();
 
         // set url
-        $curlopt_url = "https://api.github.com/repos/" . $this->user . "/" . $this->repo . "/issues/" . $this->issue;
+        $curlopt_url = "https://api.github.com/repos/" .
+            $this->user . "/" . $this->repo . "/issues/" . $this->issue;
         curl_setopt($ch, CURLOPT_URL, $curlopt_url);
 
         // set proxy
-        if (isset($this->proxy)) curl_setopt($ch, CURLOPT_PROXY, $this->proxy);
+        if (isset($this->proxy))
+            curl_setopt($ch, CURLOPT_PROXY, $this->proxy);
 
         // set header
-        $headers = array('User-Agent: curl-php', 'Authorization: token '.$this->token);
+        $headers = array('User-Agent: curl-php',
+                         'Authorization: token '.$this->token);
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 
         // this is a PATCH request
@@ -143,7 +147,8 @@ class GitHubObject {
         print "PATCH request returned " . $httpCode . "\n";
         if ($httpCode != 200) {
             $this->add_comment("Something has gone wrong (error " . $httpCode . ").\n");
-            $this->add_comment("@ggouaillardet @jsquyres please have a look at it!\n");
+            global $maintainers;
+            $this->add_comment("$maintainers Please have a look at it!\n");
         }
 
         // close curl resource
