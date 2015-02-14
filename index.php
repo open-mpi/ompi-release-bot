@@ -110,7 +110,8 @@ class GitHubObject {
         $ch = curl_init();
 
         // set url
-        curl_setopt($ch, CURLOPT_URL, "https://api.github.com/repos/" . $this->user . "/" . $this->repo . "/issues/" . $this->issue);
+        $curlopt_url = "https://api.github.com/repos/" . $this->user . "/" . $this->repo . "/issues/" . $this->issue;
+        curl_setopt($ch, CURLOPT_URL, $curlopt_url);
 
         // set proxy
         if (isset($this->proxy)) curl_setopt($ch, CURLOPT_PROXY, $this->proxy);
@@ -138,6 +139,7 @@ class GitHubObject {
 
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
+        print "PATCH request to: $curlopt_url\n";
         print "PATCH request returned " . $httpCode . "\n";
         if ($httpCode != 200) {
             $this->add_comment("Something has gone wrong (error " . $httpCode . ").\n");
