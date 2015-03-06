@@ -291,6 +291,8 @@ function label_exists ($gh, $label) {
             $output = json_encode($labels);
             fwrite($fd, $output, strlen($output));
             fclose($fd);
+        } else {
+            print_debug("getting labels failed: code $httpCode\n");
         }
         unset($labels['ETag']);
         $gh->available_labels = $labels;
@@ -338,6 +340,8 @@ function milestone_exists($gh, $milestone) {
             $output = json_encode($milestones);
             fwrite($fd, $output, strlen($output));
             fclose($fd);
+        } else {
+            print_debug("getting milestones failed: code $httpCode\n");
         }
         unset($milestones['ETag']);
         $gh->available_milestones = $milestones;
