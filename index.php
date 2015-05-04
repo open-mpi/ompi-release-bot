@@ -627,7 +627,7 @@ function process_comment_body($gh)
             is_organization_member($gh, $gh->sender)) {
             $gh->patch_github_issue();
         } else {
-            $gh->add_comment ("@" . $gh->sender . ": Sorry, only this repo's organization members can interact with this bot.\n");
+            $gh->add_comment ("@" . $gh->sender . ": Sorry, only this repo's organization members can interact with this bot.  If you're a member of this organization, make your membership public so that this bot can verify your membership (go to http://github.com/orgs/$org/people, find yourself on that page, then change your membership from \"Private\" to \"Public\").\n");
         }
     } else {
         print "NO PATCH\n";
