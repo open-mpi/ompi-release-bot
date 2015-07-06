@@ -318,7 +318,7 @@ function milestone_exists($gh, $milestone) {
     /* See comments in label_exists() for a description of the cache
      * file/read from Github scheme. */
     $file = "$cache_dir/$file_prefix" . "milestones.json";
-    if (!isset($gh->available_labels)) {
+    if (!isset($gh->available_milestones)) {
         if (file_exists($file)) {
             $fd = fopen($file, "r");
             $milestones= json_decode(fread($fd, filesize($file)), true);
