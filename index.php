@@ -453,11 +453,13 @@ function remove_issue_assignee($gh) {
  */
 function find_label($gh)
 {
-    /* Hard-coded shortcut: ":+1:" and ":thumbsup" is a shortcut for
-     * the "reviewed"/i label (if it exists).  Note that : are \W
-     * characters, so we have to use \B here instead of \b. */
+    /* Hard-coded shortcuts: ":+1:", ":thumbsup:", and "👍" are
+     * shortcuts for the "reviewed"/i label (if it exists).  Note that
+     * : are \W characters, so we have to use \B here instead of
+     * \b. */
     if ((preg_match_all("/\B:\+1:\B/m", $gh->body, $matches) > 0 ||
-         preg_match_all("/\B:thumbsup:\B/m", $gh->body, $matches) > 0) &&
+         preg_match_all("/\B:thumbsup:\B/m", $gh->body, $matches) > 0 ||
+         preg_match_all("/👍/m", $gh->body, $matches) > 0) &&
         label_exists($gh, "reviewed")) {
         $gh->body .= "\nbot:label:reviewed\n";
     }
@@ -483,12 +485,13 @@ function find_label($gh)
  */
 function find_nolabel($gh)
 {
-    /* Hard-coded shortcut: ":-1:" and ":thumbsdown:" is a shortcut
-     * for removing the "reviewed"/i label (if it exists).  Note that
-     * : are \W characters, so we have to use \B here instead of
-     * \b. */
+    /* Hard-coded shortcuts: ":-1:", ":thumbsdown:", and "👎" are
+     * shortcuts for removing the "reviewed"/i label (if it exists).
+     * Note that : are \W characters, so we have to use \B here
+     * instead of \b. */
     if ((preg_match_all("/\B:\-1:\B/m", $gh->body, $matches) > 0 ||
-         preg_match_all("/\B:thumbsdown:\B/m", $gh->body, $matches) > 0) &&
+         preg_match_all("/\B:thumbsdown:\B/m", $gh->body, $matches) > 0 ||
+         preg_match_all("/👎/m", $gh->body, $matches) > 0) &&
         label_exists($gh, "reviewed")) {
         $gh->body .= "\nbot:nolabel:reviewed\n";
     }
