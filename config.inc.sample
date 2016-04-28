@@ -8,7 +8,7 @@ $file_prefix = "ompi-label-bot-";
 
 // Github usernames of maintainers who should be notified when things
 // go wrong
-$maintainers = "...put one or more \"at\"username github mentions here..."
+$maintainers = "...put one or more \"at\"username github mentions here...";
 
 // Set this to be the name of the Github user or organization where
 // the repository that we will be monitoring lives.  For example, if
